@@ -5,7 +5,7 @@
   const FRAME_RATE = 60
   const PARTICLE_NUM = 2000
   const RADIUS = Math.PI * 2
-  const CANVASWIDTH = 2000
+  const CANVASWIDTH = 1000
   const CANVASHEIGHT = 150
   const CANVASID = 'canvas'
 
@@ -109,8 +109,8 @@
     canvas.height = CANVASHEIGHT
     canvas.style.position = 'absolute'
     canvas.style.left = '0%'
-    canvas.style.top = '0%'
-    canvas.style.bottom = '0%'
+    canvas.style.top = '30%'
+    canvas.style.bottom = '30%'
     canvas.style.right = '0%'
     canvas.style.marginTop = window.innerHeight * .15 + 'px'
   }
