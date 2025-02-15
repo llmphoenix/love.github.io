@@ -137,6 +137,11 @@
             timeDiff = Math.floor(timeDiff / 24);
             var days = timeDiff;
 
+            if (seconds < 10)  seconds = "0" + seconds
+            if (minutes < 10)  minutes = "0" + minutes
+            if (hours < 10)    hours = "0" + hours
+            if (days < 10)     days = "0" + days
+            
             var timeString = "甄玥，爱你 已超过 " + days + " 天 " + hours + " 小时 " + minutes + " 分钟 " + seconds + " 秒";
             document.getElementById("timeElapsed").textContent = timeString;
         }

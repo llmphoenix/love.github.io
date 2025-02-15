@@ -1,0 +1,94 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	<title>玥爱明</title>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+	<style type="text/css">
+		@font-face {
+			font-family: digit;
+			src: url('digital.ttf') format("truetype");
+		}
+	</style>
+	<link href="css/default.css" type="text/css" rel="stylesheet">
+	<script type="text/javascript" src="js/jquery.js"></script>
+	<script type="text/javascript" src="js/garden.js"></script>
+	<script type="text/javascript" src="js/functions.js"></script>
+</head>
+
+<body>
+<div id="mainDiv">
+	<div id="content">
+		<div id="code">
+			<span class="comments">人生白驹过隙，个中滋味，如人饮水，冷暖自知。</span><br/>
+			<span class="comments">无非是笑笑别人，然后被别人笑笑而已，是非对错，皆过眼云烟。</span><br/>
+			<span class="placeholder"></span><span class="keyword"></span><br/>
+			<span class="placeholder"></span><span class="placeholder"></span><br/>
+			<span class="placeholder"></span><span class="keyword"></span><br/>
+			<span class="placeholder"></span><span class="placeholder"></span><br/>
+			<!-- <span class="string">秋风清，秋月明，</span><br/>
+			<span class="string">落叶聚还散，寒鸦栖复惊。</span><br/>
+			<span class="string">相思相见知何日？此时此夜难为情！</span><br/>
+			<span class="string">入我相思门，知我相思苦。</span><br/>
+			<span class="string">长相思兮长相忆，短相思兮无穷极。</span><br/>
+			<span class="string">早知如此绊人心，何如当初莫相识。</span><br/> -->
+			<span class="string">问世间，情为何物，直教生死相许？</span><br/>
+			<span class="string">天南地北双飞客，老翅几回寒暑。</span><br/>
+			<span class="string">欢乐趣，离别苦，就中更有痴儿女。</span><br/>
+			<span class="string">君应有语：渺万里层云，千山暮雪，只影向谁去？</span><br/>
+			<span class="string">横汾路，寂寞当年箫鼓，荒烟依旧平楚。</span><br/>
+			<span class="string">招魂楚些何嗟及，山鬼暗啼风雨。</span><br/>
+			<span class="string">天也妒，未信与，莺儿燕子俱黄土。</span><br/>
+			<span class="string">千秋万古，为留待骚人，狂歌痛饮，来访雁丘处。</span><br/>
+			<span class="placeholder"></span><span class="keyword"></span><br/>
+			<span class="placeholder"></span><span class="placeholder"></span><br/>
+			<span class="placeholder"></span><span class="keyword"></span><br/>
+			<span class="placeholder"></span><span class="placeholder"></span><br/>	
+			<span class="keyword">唯爱门前双柳树，枝枝叶叶不相离</span><br/>
+			<span class="keyword">只愿君心似我心，定不负相思意</span><br/>
+		</div>
+		<div id="loveHeart">
+			<canvas id="garden"></canvas>
+			<div id="words">
+				<div id="messages">
+					甄玥，爱你，Forever
+					<div id="elapseClock"></div>
+				</div>
+				<div id="loveu">
+					You Jump， I Jump.<br/>
+					<div class="signature">明爱玥</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+	var offsetX = $("#loveHeart").width() / 2;
+	var offsetY = $("#loveHeart").height() / 2 - 55;
+
+	var together = "2022-11-20";
+	if (!document.createElement('canvas').getContext) {
+		var msg = document.createElement("div");
+		msg.id = "errorMsg";
+		msg.innerHTML = "Your browser doesn't support HTML5!<br/>Recommend use Chrome 14+/IE 9+/Firefox 7+/Safari 4+";
+		document.body.appendChild(msg);
+		$("#code").css("display", "none")
+		$("#copyright").css("position", "absolute");
+		$("#copyright").css("bottom", "10px");
+		document.execCommand("stop");
+	} else {
+		setTimeout(function () {
+			startHeartAnimation();
+		}, 5000);
+
+		timeElapse(together);
+		setInterval(function () {
+			timeElapse(together);
+		}, 500);
+
+		adjustCodePosition();
+		$("#code").typewriter();
+	}
+</script>
+</body>
+</html>
