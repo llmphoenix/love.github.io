@@ -1,137 +1,148 @@
+<!DOCTYPE html>
 <html>
-	<head>
-		<title>甄玥爱你</title>
-		<meta http-equiv="content-type" content="text/html; charset=UTF-8">		
-		<style type="text/css">
-			body {
-				display: flex;
-				align-items: center;
-				justify-content: center;
-				height: 100vh;
-				margin: 0;
-				overflow: hidden;
-				 background-color: #FCE8F8;
-			}
-	
-			#snow-container {
-				position: fixed;
-				top: 0;
-				left: 0;
-				width: 100%;
-				height: 100%;
-				pointer-events: none;
-				z-index: -1;
-			}
-	
-			.snowflake {
-				position: absolute;
-				width: 10px;
-				height: 10px;
-				background-color: #fff;
-				border-radius: 50%;
-				opacity: 0.8;
-				pointer-events: none;
-				animation: snowfall linear infinite;
-			}
-	
-			@keyframes snowfall {
-				0% {
-					transform: translateY(-100%);
-				}
-				100% {
-					transform: translateY(100vh);
-				}
-			}
-	
-			.heart {
-				width: 200px;
-				height: 200px;
-				position: relative;
-				animation: heartbeat 1s infinite;
-				transform-origin: center center;
-			}
-	
-			.heart:before,
-			.heart:after {
-				content: "";
-				background-color: red;
-				border-radius: 50px 50px 0 0;
-				position: absolute;
-				top: 0;
-			}
-	
-			.heart:before {
-				left: 100px;
-				width: 100px;
-				height: 160px;
-				transform: rotate(-45deg);
-				transform-origin: 0 100%;
-			}
-	
-			.heart:after {
-				left: 0;
-				width: 100px;
-				height: 160px;
-				transform: rotate(45deg);
-				transform-origin: 100% 100%;
-			}
-	
-			#timeElapsed {
-				text-align: center;
-				font-size: 24px;
-				margin-top: 20px;
-			}
-	
-			@keyframes heartbeat {
-				0% {
-					transform: scale(1);
-				}
-				50% {
-					transform: scale(1.2);
-				}
-				100% {
-					transform: scale(1);
-				}
-			}
-	
-			@keyframes falling {
-				0% {
-					transform: translateY(-100vh);
-				}
-				100% {
-					transform: translateY(100vh);
-				}
-			}
-	
-			.sakura {
-				position: absolute;
-				top: -20px;
-				left: -20px;
-				width: 40px;
-				height: 40px;
-				background-image: url('https://www.unicode.org/emoji/charts/full-emoji-list.html#1f338'); /* 🌸的Unicode转义序列 */
-				background-size: cover;
-				animation: falling linear infinite;
-				animation-duration: 10s;
-			}
-		</style>
-	</head>	
-	<body>
-	<div id="snow-container"></div>
-	<div class="container">
-	<script type="text/javascript" src="js/phoenixlib.js"></script>		
-	<link href="css/phoenixlib.css" rel="stylesheet" type="text/css" />
-	<style type="text/css">
-			@import"css/phoenixlib.css";
-	</style>
-	<div class="heart" style="position:absolute; left:300px; top:400px; width:auto; height:auto;"></div>
-	<div class="heart" style="position:absolute; left:300px; top:500px; width:auto; height:auto;"></div>
-	<link href="css/love.css" rel="stylesheet" type="text/css" />
-	<div class="love"></div>		
-	<script src="js/d3.min.js"></script>
-	<script type="text/javascript" src="js/love.js">	
-	</script>
-	</div>	
+<head>
+    <title>明爱玥</title>
+    <style type="text/css">
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+			 background-color: #FCE8F8;
+        }
+
+        #snow-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .snowflake {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #fff;
+            border-radius: 50%;
+            opacity: 0.8;
+            pointer-events: none;
+            animation: snowfall linear infinite;
+        }
+
+        @keyframes snowfall {
+            0% {
+                transform: translateY(-100%);
+            }
+            100% {
+                transform: translateY(100vh);
+            }
+        }
+
+        .heart {
+            width: 200px;
+            height: 200px;
+            position: relative;
+            animation: heartbeat 1s infinite;
+            transform-origin: center center;
+        }
+
+        .heart:before,
+        .heart:after {
+            content: "";
+            background-color: red;
+            border-radius: 50px 50px 0 0;
+            position: absolute;
+            top: 0;
+        }
+
+        .heart:before {
+            left: 100px;
+            width: 100px;
+            height: 160px;
+            transform: rotate(-45deg);
+            transform-origin: 0 100%;
+        }
+
+        .heart:after {
+            left: 0;
+            width: 100px;
+            height: 160px;
+            transform: rotate(45deg);
+            transform-origin: 100% 100%;
+        }
+
+        #timeElapsed {
+            text-align: center;
+            font-size: 24px;
+            margin-top: 20px;
+        }
+
+        @keyframes heartbeat {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes falling {
+            0% {
+                transform: translateY(-100vh);
+            }
+            100% {
+                transform: translateY(100vh);
+            }
+        }
+
+        .sakura {
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            width: 40px;
+            height: 40px;
+            background-image: url('https://www.unicode.org/emoji/charts/full-emoji-list.html#1f338'); /* 🌸的Unicode转义序列 */
+            background-size: cover;
+            animation: falling linear infinite;
+            animation-duration: 10s;
+        }
+    </style>
+</head>
+<body>
+    <div id="snow-container"></div>
+    <div class="heart"></div>
+    <div id="timeElapsed"></div>
+
+    <script>
+        function getTimeElapsed() {
+            var startDate = new Date("2022-11-20");
+            var currentDate = new Date();
+            var timeDiff = currentDate - startDate;
+
+            var milliseconds = timeDiff % 1000;
+            timeDiff = Math.floor(timeDiff / 1000);
+            var seconds = timeDiff % 60;
+            timeDiff = Math.floor(timeDiff / 60);
+            var minutes = timeDiff % 60;
+            timeDiff = Math.floor(timeDiff / 60);
+            var hours = timeDiff % 24;
+            timeDiff = Math.floor(timeDiff / 24);
+            var days = timeDiff;
+
+            var timeString = "甄玥，爱你 已超过 " + days + " 天 " + hours + " 小时 " + minutes + " 分钟 " + seconds + " 秒";
+            document.getElementById("timeElapsed").textContent = timeString;
+        }
+
+        setInterval(getTimeElapsed, 1000);
+    </script>
 
     <script>
         function createSnowflake() {
@@ -145,11 +156,10 @@
             const randomColor = getRandomColor();
             snowflake.style.backgroundColor = randomColor;
 
-			const letters = '012';
-			let l = letters[Math.floor(Math.random() * 3)];
-
-            snowflake.innerHTML = '玥'; 
-			snowflake.textContent = '玥'; 
+            let index = Math.random() * 1000;
+            if(index < 333) snowflake.innerHTML = '明'; 
+            else if(index < 666) snowflake.innerHTML = '玥'; 
+            else snowflake.innerHTML = '恋'; 
 
             return snowflake;
         }
@@ -165,7 +175,7 @@
 
         function snowfall() {
             const snowContainer = document.getElementById('snow-container');
-            const numSnowflakes = 50; 
+            const numSnowflakes = 100; 
 
             for (let i = 0; i < numSnowflakes; i++) {
                 const snowflake = createSnowflake();
@@ -190,11 +200,6 @@
         }
 
         setInterval(createSakura, 200);
-   </script>
-	<h3>
-	<script type="text/javascript" src="js/jumplovepage.js">
-	</script>		
-	<a href="" id="redirect2love">一眼万年，爱你</a>   
-	</h3>
-	</body>
+    </script>
+</body>
 </html>
