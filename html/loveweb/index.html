@@ -123,7 +123,7 @@
 
     <script>
         function getTimeElapsed() {
-            var startDate = new Date("2022-01-01");
+            var startDate = new Date("2022-11-20");
             var currentDate = new Date();
             var timeDiff = currentDate - startDate;
 
@@ -137,7 +137,7 @@
             timeDiff = Math.floor(timeDiff / 24);
             var days = timeDiff;
 
-            var timeString = "甄玥，爱你 已经超过 " + days + " 天 " + hours + " 小时 " + minutes + " 分钟 " + seconds + " 秒了";
+            var timeString = "甄玥，爱你 已超过 " + days + " 天 " + hours + " 小时 " + minutes + " 分钟 " + seconds + " 秒";
             document.getElementById("timeElapsed").textContent = timeString;
         }
 
@@ -156,7 +156,10 @@
             const randomColor = getRandomColor();
             snowflake.style.backgroundColor = randomColor;
 
-            snowflake.innerHTML = '玥'; 
+            let index = Math.random() * 1000;
+            if(index < 333) snowflake.innerHTML = '明'; 
+            else if(index < 666) snowflake.innerHTML = '玥'; 
+            else snowflake.innerHTML = '恋'; 
 
             return snowflake;
         }
@@ -172,7 +175,7 @@
 
         function snowfall() {
             const snowContainer = document.getElementById('snow-container');
-            const numSnowflakes = 50; // Adjust the number of snowflakes here
+            const numSnowflakes = 100; 
 
             for (let i = 0; i < numSnowflakes; i++) {
                 const snowflake = createSnowflake();
