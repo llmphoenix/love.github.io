@@ -12,9 +12,10 @@ $(function () {
 	gardenCtx = gardenCanvas.getContext("2d");
 	gardenCtx.globalCompositeOperation = "lighter";
 	garden = new Garden(gardenCtx, gardenCanvas);
-	$("#content").css("width", $loveHeart.width() + $("#code").width());
+	// $("#content").css("width", $loveHeart.width() + $("#code").width());
 	$("#content").css("height", Math.max($loveHeart.height(), $("#code").height()));
-	$("#content").css("margin-top", Math.max(($window.height() - $("#content").height()) / 2 - 50, 10));
+	// $("#content").css("margin-top", Math.max(($window.height() - $("#content").height()) / 2 - 50, 10));
+	$("#content").css("margin-top", 100);
 	$("#content").css("margin-left", Math.max(($window.width() - $("#content").width()) / 2, 10));
 	setInterval(function () {
 		garden.render()

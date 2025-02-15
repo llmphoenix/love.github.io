@@ -67,8 +67,8 @@ body {
 #code {
     float: left;
     width: 440px;
-    margin-top: 60px !important;
-    height: 400px;
+    margin-top: 10px !important;
+    height: 200px;
     color: #333;
     font-family: "Consolas", "Monaco", "Bitstream Vera Sans Mono", "Courier New", "sans-serif";
     font-size: 12px
