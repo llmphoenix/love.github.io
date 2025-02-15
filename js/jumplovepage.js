@@ -4,7 +4,7 @@ window.onload = initAll;//界面加载完毕后触发initAll函数
 function initAll()
 {
     document.getElementById("redirect2love").onclick = initRedirect; //redirect元素被点击时触发initRedirect函数
-    // document.getElementById("redirect2love2").onclick = initRedirect2;//redirect元素被点击时触发initRedirect函数
+    document.getElementById("redirect2love2").onclick = initRedirect2;//redirect元素被点击时触发initRedirect函数
     document.getElementById("redirect2love3").onclick = initRedirect3;//redirect元素被点击时触发initRedirect函数
 }
 
