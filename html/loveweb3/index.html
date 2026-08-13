@@ -16,8 +16,16 @@
 
     <div class="container">
         <div class="content">
-            <canvas id="universe"></canvas>
-            <canvas id="canvas"></canvas>
+            <!-- 左侧：心形花朵（镭射闪耀） -->
+            <div class="flower-side">
+                <canvas id="heartCanvas"></canvas>
+            </div>
+
+            <!-- 右侧：粒子文字主舞台 -->
+            <div class="stage-side">
+                <canvas id="universe"></canvas>
+                <canvas id="canvas"></canvas>
+            </div>
 
             <div class="page-title">星 空 誓 言</div>
 
@@ -26,6 +34,7 @@
     </div>
 
     <script src="scripts/universe.js"></script>
+    <script src="scripts/heart-flowers.js"></script>
     <script src="scripts/main.js"></script>
     <!-- 爱心流星鼠标轨迹拖尾 -->
     <script src="../../js/heart-trail.js"></script>
