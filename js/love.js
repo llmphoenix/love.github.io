@@ -20,4 +20,11 @@ d3.select('.love')
     .enter()
     .append('span')
     .style('--n', (d, i) => i + 1)
-    .text((d) => d);
+    .text((d) => d)
+    .classed('lit', (d, i) => i % 5 === 0)   /* 标记：该词的"爱"作为醒目高亮点（淡化边框模式下） */
+    .style('--lit-delay', (d, i, nodes) => {
+        /* 与基础散布相位错开 2.5s，并把高亮词均匀铺满 20s 周期，
+           让"接力变实"沿心形轮廓均匀滑动 */
+        const n = nodes.length;
+        return `${-(2.5 + (i * 20) / n)}s`;
+    });

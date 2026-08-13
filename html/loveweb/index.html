@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>心动时刻 - 明爱玥</title>
+    <link rel="stylesheet" href="css/love-frame.css">
     <style>
         * {
             margin: 0;
@@ -267,6 +268,9 @@
     </style>
 </head>
 <body>
+    <!-- 万国爱语爱心边框（由 js/love.js 填充） -->
+    <div class="love"></div>
+
     <div id="falling-chars"></div>
 
     <a href="../../index.html" class="back-btn">← 返回</a>
@@ -301,10 +305,15 @@
             </div>
         </div>
 
-        <div class="love-quote">爱你，仿若流风之回雪</div>
+        <div class="love-quote">爱你，</div>
+        <div class="love-quote">似是轻云之蔽月，</div>
+        <div class="love-quote">仿若流风之回雪。</div>
     </div>
 
     <script src="../../js/timer.js"></script>
+    <!-- 万国爱语爱心边框：d3 必须在 love.js 之前 -->
+    <script src="../../js/d3.min.js"></script>
+    <script src="../../js/love.js"></script>
     <script>
         // 计时器（逻辑统一在 js/timer.js，此处只配置起始时间）
         LoveTimer.init({ startDate: '2022-11-20T19:00:00', mode: 'digital' });
