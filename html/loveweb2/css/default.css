@@ -1,116 +1,467 @@
-body {
+* {
     margin: 0;
     padding: 0;
-    background: #fdc9d1;
-    font-size: 12px;
-    overflow: auto
+    box-sizing: border-box;
+}
+
+html {
+    /* 移动端消除点击延迟 */
+    touch-action: manipulation;
+}
+
+body {
+    background: linear-gradient(135deg, #fff0f5 0%, #ffe4ec 50%, #ffd6e0 100%);
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Consolas', 'Monaco', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+    /* 移动端：禁止长按选择/点击高亮 */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    overscroll-behavior: none;
+}
+
+/* 返回按钮 */
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 50px;
+    padding: 10px 20px;
+    text-decoration: none;
+    color: #d6336c;
+    font-size: 0.9rem;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.7);
+    transform: translateX(-3px);
+    box-shadow: 0 4px 15px rgba(214, 51, 108, 0.2);
+}
+
+/* 音乐控制按钮 */
+.music-control {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 50px;
+    padding: 10px 20px;
+    color: #d6336c;
+    font-size: 0.9rem;
+    cursor: pointer;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+}
+
+.music-control:hover {
+    background: rgba(255, 255, 255, 0.7);
+    transform: translateX(3px);
+    box-shadow: 0 4px 15px rgba(214, 51, 108, 0.2);
+}
+
+.music-control.playing .music-icon {
+    animation: musicSpin 2s linear infinite;
+}
+
+@keyframes musicSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 #mainDiv {
     width: 100%;
-    height: 100%
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
 }
 
+#content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+    max-width: 1200px;
+    width: 100%;
+    flex-wrap: wrap;
+    flex: 0 0 auto; /* 不伸缩，宽度由 width 决定 */
+    min-width: 0;
+}
+
+/* 爱心区域 */
 #loveHeart {
-    float: left;
     width: 670px;
     height: 620px;
     position: relative;
+    flex-shrink: 0;
+}
+
+/* 底层：镭射心形花朵画布（铺满 #loveHeart，位于 #garden 下方） */
+#heartCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: 0;
 }
 
 #garden {
+    position: absolute;
+    inset: 0;
     width: 100%;
-    height: 100%
-}
-
-#elapseClock {
-    text-align: right;
-    font-size: 18px;
-    margin-top: 10px;
-    margin-bottom: 10px
+    height: 100%;
+    display: block;
+    z-index: 1; /* 叠在花朵画布之上 */
 }
 
 #words {
-    font-family: "sans-serif";
-    width: 500px;
-    font-size: 24px;
-    color: #666
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    width: 80%;
+    text-align: center;
+    color: #d6336c;
+    pointer-events: none;
 }
 
 #messages {
-    display: none
+    display: none;
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+}
+
+#elapseClock {
+    font-size: 0.95rem;
+    margin-top: 10px;
+    color: #a61e4d;
 }
 
 #elapseClock .digit {
-    font-family: "digit";
-    font-size: 36px
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #d6336c;
 }
 
 #loveu {
-    padding: 5px;
-    font-size: 22px;
-    margin-top: 80px;
-    margin-right: 120px;
-    text-align: right;
-    display: none
+    display: none;
+    font-size: 1rem;
+    margin-top: 20px;
+    color: #c2255c;
 }
 
 #loveu .signature {
     margin-top: 10px;
-    font-size: 20px;
+    font-size: 0.9rem;
+    font-style: italic;
+    opacity: 0.8;
 }
 
-#clickSound {
-    display: none
-}
-
+/* 代码区域 */
 #code {
-    float: left;
-    width: 440px;
-    margin-top: 10px !important;
-    height: 200px;
+    width: 420px;
     color: #333;
-    font-family: "Consolas", "Monaco", "Bitstream Vera Sans Mono", "Courier New", "sans-serif";
-    font-size: 12px
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 25px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 32px rgba(214, 51, 108, 0.1);
+    flex-shrink: 0;
+}
+
+/* ============================================================
+   代码高亮配色 —— 心形花朵色系（五套随机切换）
+   来源：garden.js 花朵随机颜色
+   color: {rmin: 128, rmax: 255, gmin: 0, gmax: 128, bmin: 0, bmax: 128}
+   （R: 128-255，G: 0-128，B: 0-128）→ 红 / 粉 / 玫红 / 珊瑚 色系
+   ============================================================
+   五套配色通过 CSS 变量（--string/-keyword/-comments/-caret-color）
+   定义，由 functions.js 在页面加载时随机给 <body> 设置
+   data-theme="t1"~"t5"，实现每次进入随机一套配色。
+
+   ── 方案一 · 烈焰玫瑰（正红系） data-theme="t1" ────────────
+     .string  → #e63946   正红（花瓣最深处）
+     .keyword → #a61e4d   深玫红（花蕊）
+     .comments→ #f4978e   浅珊瑚粉（花瓣浅缘）
+     .caret   → #d6336c   玫红（爱心主色）
+
+   ── 方案二 · 樱花初恋（粉红系） data-theme="t2" ────────────
+     .string  → #d6336c   玫红（爱心主色）
+     .keyword → #9d174d   深玫瑰（花心）
+     .comments→ #ff8fab   樱花粉（花瓣）
+     .caret   → #e91e63   桃红（花苞）
+
+   ── 方案三 · 热情珊瑚（珊瑚橙红系） data-theme="t3" ────────
+     .string  → #ff6f61   珊瑚红
+     .keyword → #c0392b   石榴红
+     .comments→ #ffb199   蜜桃粉
+     .caret   → #ff8a65   珊瑚橙
+
+   ── 方案四 · 经典玫红（玫红系） data-theme="t4" ────────────
+     .string  → #c2185b   品红
+     .keyword → #880e4f   绛紫红
+     .comments→ #ff80ab   淡玫红
+     .caret   → #f06292   水红
+
+   ── 方案五 · 绯红薄暮（深红系） data-theme="t5" ────────────
+     .string  → #e3242b   绯红
+     .keyword → #8b0000   暗红
+     .comments→ #ff9999   浅绯
+     .caret   → #ff4d4d   亮红
+   ============================================================ */
+
+/* 默认主题（t2 樱花初恋，无 data-theme 时的兜底） */
+:root {
+    --string-color: #d6336c;
+    --keyword-color: #9d174d;
+    --comments-color: #ff8fab;
+    --caret-color: #e91e63;
+}
+
+body[data-theme="t1"] {
+    --string-color: #e63946;
+    --keyword-color: #a61e4d;
+    --comments-color: #f4978e;
+    --caret-color: #d6336c;
+}
+
+body[data-theme="t2"] {
+    --string-color: #d6336c;
+    --keyword-color: #9d174d;
+    --comments-color: #ff8fab;
+    --caret-color: #e91e63;
+}
+
+body[data-theme="t3"] {
+    --string-color: #ff6f61;
+    --keyword-color: #c0392b;
+    --comments-color: #ffb199;
+    --caret-color: #ff8a65;
+}
+
+body[data-theme="t4"] {
+    --string-color: #c2185b;
+    --keyword-color: #880e4f;
+    --comments-color: #ff80ab;
+    --caret-color: #f06292;
+}
+
+body[data-theme="t5"] {
+    --string-color: #e3242b;
+    --keyword-color: #8b0000;
+    --comments-color: #ff9999;
+    --caret-color: #ff4d4d;
 }
 
 #code .string {
-    color: #2a36ff
+    color: var(--string-color);
 }
 
 #code .keyword {
-    color: #7f0055;
-    font-weight: bold
-}
-
-#code .placeholder {
-    margin-left: 15px
-}
-
-#code .space {
-    margin-left: 7px
+    color: var(--keyword-color);
+    font-style: normal;
+    font-weight: bold;
 }
 
 #code .comments {
-    color: #3f7f5f
+    color: var(--comments-color);
+    font-style: italic;
+    font-weight: bold;    
 }
 
-#copyright {
-    margin-top: 40px;
-    text-align: center;
-    width: 100%;
-    color: #666
+/* 打字光标：零宽度（不占布局空间、行尾不挤换行），"_" 溢出显示；
+   闪烁由 functions.js 的独立定时器切换 visibility 完成（不触发重排） */
+#code .caret {
+    display: inline-block;
+    width: 0;
+    overflow: visible;
+    color: var(--caret-color);
+    font-weight: bold;
+    visibility: visible;
 }
 
 #errorMsg {
     width: 100%;
     text-align: center;
-    font-size: 24px;
+    font-size: 1.2rem;
     position: absolute;
-    top: 100px;
-    left: 0
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #d6336c;
 }
 
-#copyright a {
-    color: #666
+/* 平板适配 */
+@media (max-width: 1024px) {
+    #content {
+        gap: 20px;
+    }
+
+    #loveHeart {
+        width: min(400px, calc(100% - 360px - 20px));
+        height: min(400px, calc(100% - 360px - 20px));
+        flex-shrink: 0;
+    }
+
+    #code {
+        width: 360px;
+        font-size: 12px;
+        flex-shrink: 0;
+    }
+}
+
+/* 手机端适配 - 上下布局 */
+@media (max-width: 768px) {
+    #mainDiv {
+        padding: 15px;
+        padding-top: 70px;
+        align-items: flex-start;
+    }
+
+    #content {
+        flex-direction: column;
+        gap: 20px;
+        width: 100%; /* 配合 flex:none，明确宽度避免塌陷 */
+    }
+
+    #loveHeart {
+        width: min(100%, 380px);
+        max-width: 380px;
+        height: 380px;
+        order: 1;
+        align-self: center;
+    }
+
+    #code {
+        width: min(100%, 380px);
+        max-width: 380px;
+        order: 2;
+        font-size: 11px;
+        padding: 20px;
+        align-self: center;
+    }
+
+    .back-btn {
+        top: 15px;
+        left: 15px;
+        padding: 8px 15px;
+        font-size: 0.8rem;
+        top: calc(15px + env(safe-area-inset-top));
+        left: calc(15px + env(safe-area-inset-left));
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+
+    .music-control {
+        top: 15px;
+        right: 15px;
+        padding: 8px 15px;
+        font-size: 0.8rem;
+        top: calc(15px + env(safe-area-inset-top));
+        right: calc(15px + env(safe-area-inset-right));
+        min-height: 44px;
+    }
+
+    #messages {
+        font-size: 0.95rem;
+    }
+
+    #elapseClock {
+        font-size: 0.85rem;
+    }
+
+    #elapseClock .digit {
+        font-size: 1.2rem;
+    }
+}
+
+/* 小屏手机 */
+@media (max-width: 400px) {
+    #loveHeart {
+        height: 320px;
+    }
+
+    #code {
+        font-size: 10px;
+        padding: 15px;
+    }
+}
+
+/* ===== 手机横屏适配（仅移动宽度 ≤1024px，高度 < 500px） ===== */
+/* 注意：必须限定 max-width，否则 PC 矮窗口（宽屏高度<500）会误触发 */
+@media (max-width: 1024px) and (orientation: landscape) and (max-height: 500px) {
+    html, body {
+        overflow-y: auto;
+    }
+
+    #mainDiv {
+        padding: 15px;
+        padding-top: 60px;
+        align-items: center;
+    }
+
+    #content {
+        flex-direction: row;
+        gap: 20px;
+        width: auto;
+        max-width: 100%;
+    }
+
+    #loveHeart {
+        width: min(52vh, 360px);
+        height: min(52vh, 360px);
+        order: 0;
+        flex-shrink: 1;
+    }
+
+    #code {
+        width: min(42vw, 340px);
+        max-width: 42vw;
+        order: 1;
+        font-size: 11px;
+        padding: 15px;
+        flex-shrink: 1;
+        align-self: center;
+    }
+
+    .back-btn {
+        top: calc(10px + env(safe-area-inset-top));
+        left: calc(10px + env(safe-area-inset-left));
+        min-height: 36px;
+        padding: 6px 12px;
+        font-size: 0.75rem;
+    }
+
+    .music-control {
+        top: calc(10px + env(safe-area-inset-top));
+        right: calc(10px + env(safe-area-inset-right));
+        min-height: 36px;
+        padding: 6px 12px;
+        font-size: 0.75rem;
+    }
 }

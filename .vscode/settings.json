@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^node --check 'd:\\\\Study\\\\Html\\\\love\\.github\\.io\\\\js\\\\heart-trail\\.js'; node --check 'd:\\\\Study\\\\Html\\\\love\\.github\\.io\\\\js\\\\weather\\.js'; node --check 'd:\\\\Study\\\\Html\\\\love\\.github\\.io\\\\js\\\\love\\.js'; node --check 'd:\\\\Study\\\\Html\\\\love\\.github\\.io\\\\html\\\\loveweb2\\\\js\\\\heart-flowers\\.js'; node --check 'd:\\\\Study\\\\Html\\\\love\\.github\\.io\\\\html\\\\loveweb2\\\\js\\\\functions\\.js'; Write-Output 'ALL OK'$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

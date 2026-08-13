@@ -1,101 +1,384 @@
-*{
-    margin:0;
-    padding:0;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
-html,
-body {
+
+html, body {
     width: 100%;
     height: 100%;
-    overflow-x: hidden;
-    overflow-y: hidden;
+    overflow: hidden;
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+    /* 移动端：禁止长按选择/呼出菜单、避免点击高亮 */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    overscroll-behavior: none;
+}
+
+/* 移动端消除点击延迟 */
+html {
+    touch-action: manipulation;
 }
 
 body {
-    display: -webkit-box;
-    display: -webkit-flex;
-    display: -ms-flexbox;
     display: flex;
-    -webkit-box-pack: center;
-    -webkit-justify-content: center;
-    -ms-flex-pack: center;
     justify-content: center;
-    -webkit-box-align: center;
-    -webkit-align-items: center;
-    -ms-flex-align: center;
     align-items: center;
-    -webkit-filter: contrast(120%);
-    filter: contrast(120%);
-    background-color: black;
+    background-color: #020409;
     position: relative;
 }
 
 .container {
     width: 100%;
-    height: 99.74%;
+    height: 100%;
     background-image: radial-gradient(2000px at 10% 130%, rgba(33, 39, 80, 1) 10%, #020409 100%);
-
+    position: relative;
 }
 
 .content {
-    width: 100% auto;
-    height: 100% auto;
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+/* ===== 心形月亮：镭射心形如月悬挂于画面左上方 ===== */
+.flower-side {
+    position: fixed;
+    top: 150px;
+    left: 180px;
+    width: clamp(70px, 11vmin, 120px);
+    height: clamp(70px, 11vmin, 120px);
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    animation: moonFloat 6s ease-in-out infinite;   /* 月亮般轻盈漂浮 */
+}
+
+#heartCanvas {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* 镭射呼吸光晕（扩散 · 旋转流光） */
+.flower-side::before {
+    content: '';
+    position: absolute;
+    inset: -45%;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg,
+        rgba(255, 80, 160, 0.16),
+        rgba(80, 160, 255, 0.16),
+        rgba(255, 80, 255, 0.16),
+        rgba(80, 255, 200, 0.16),
+        rgba(255, 200, 80, 0.16),
+        rgba(255, 80, 160, 0.16));
+    filter: blur(32px);
+    pointer-events: none;
+    z-index: 0;
+    animation: laserSpin 12s linear infinite;
+}
+
+/* 月光光晕（洒落的柔和月光） */
+.flower-side::after {
+    content: '';
+    position: absolute;
+    inset: -70%;
+    border-radius: 50%;
+    background: radial-gradient(circle,
+        rgba(255, 255, 255, 0.14) 0%,
+        rgba(255, 214, 170, 0.08) 28%,
+        rgba(255, 180, 220, 0.04) 50%,
+        transparent 72%);
+    filter: blur(10px);
+    pointer-events: none;
+    z-index: 0;
+    animation: moonGlow 5s ease-in-out infinite;
+}
+
+@keyframes moonFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-9px); }
+}
+
+@keyframes moonGlow {
+    0%, 100% { opacity: 0.65; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.08); }
+}
+
+@keyframes laserSpin {
+    from { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.06); }
+    to { transform: rotate(360deg) scale(1); }
+}
+
+/* 粒子文字主舞台：铺满全屏居中 */
+.stage-side {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #universe {
-    width: 100% auto;
-    height: 100% auto;
-}
-
-#footerContent {
-    font-family: sans-serif;
-    font-size: 110%;
-    color: rgba(200, 220, 255, .3);
-    width: 100%;
-    position: fixed;
-    bottom: 0%;
-    padding: 20%;
-    text-align: center;
-    z-index: 20;
-}
-
-#footer {
     position: absolute;
-    bottom: 0%;
-    height: 300px;
+    top: 0;
+    left: 0;
     width: 100%;
-}
-
-#scene {
     height: 100%;
+}
+
+#canvas {
     position: absolute;
+    top: 30%;
     left: 50%;
-    margin-left: -768px;
+    transform: translate(-50%, -50%);
+    max-width: 100%;
 }
 
-a {
+/* 返回按钮 */
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50px;
+    padding: 10px 20px;
     text-decoration: none;
-    color: rgba(200, 220, 255, 1);
-    opacity: .4;
-    -webkit-transition: opacity .4s ease;
-    transition: opacity .4s ease;
+    color: rgba(200, 220, 255, 0.9);
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
 }
 
-a:hover {
-    opacity: 1;
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateX(-3px);
 }
 
-.txt {
-    color: hsla(0, 0%, 0%, 0);
-    text-shadow: #fff 0 0 10px;
-    transition: text-shadow 2s cubic-bezier(0, 1, 0, 1);
+/* 音乐控制按钮 */
+.music-control {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50px;
+    padding: 10px 20px;
+    color: rgba(200, 220, 255, 0.9);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
 }
 
-@-moz-document url-prefix() {
-    .txt {
-        text-shadow: #fff 0 0 20px;
+.music-control:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateX(3px);
+}
+
+.music-control.playing .music-icon {
+    animation: musicSpin 2s linear infinite;
+}
+
+@keyframes musicSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* 页面标题 */
+.page-title {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+    font-weight: 300;
+    color: rgba(200, 220, 255, 0.9);
+    letter-spacing: 8px;
+    text-shadow: 0 0 20px rgba(100, 150, 255, 0.5);
+    z-index: 10;
+    animation: titleGlow 3s ease-in-out infinite;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+@keyframes titleGlow {
+    0%, 100% { text-shadow: 0 0 20px rgba(100, 150, 255, 0.5); }
+    50% { text-shadow: 0 0 40px rgba(100, 150, 255, 0.8), 0 0 60px rgba(200, 100, 255, 0.4); }
+}
+
+/* 提示文字 */
+.hint-text {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: clamp(0.75rem, 2vw, 0.9rem);
+    color: rgba(200, 220, 255, 0.5);
+    letter-spacing: 2px;
+    z-index: 10;
+    animation: hintPulse 2s ease-in-out infinite;
+}
+
+@keyframes hintPulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 0.8; }
+}
+
+/* 手机端适配 */
+@media (max-width: 768px) {
+    .back-btn, .music-control {
+        padding: 8px 15px;
+        font-size: 0.8rem;
+    }
+
+    /* 返回按钮：左上角（避开刘海安全区） */
+    .back-btn {
+        top: 15px;
+        left: 15px;
+        top: calc(15px + env(safe-area-inset-top));
+        left: calc(15px + env(safe-area-inset-left));
+    }
+
+    .music-control {
+        top: 15px;
+        right: 15px;
+        top: calc(15px + env(safe-area-inset-top));
+        right: calc(15px + env(safe-area-inset-right));
+    }
+
+    .page-title {
+        top: 70px;
+        letter-spacing: 4px;
+    }
+
+    .hint-text {
+        bottom: 34px;
+        bottom: calc(34px + env(safe-area-inset-bottom));
+    }
+
+    /* 心形月亮：往右下移并缩小一半，避免与标题重叠 */
+    .flower-side {
+        top: 128px;
+        left: 90px;
+        width: clamp(42px, 12vw, 65px);
+        height: clamp(42px, 12vw, 65px);
+    }
+
+    .stage-side #canvas {
+        max-width: 92vw;
+    }
+
+    /* 移动端降低背景光晕的模糊半径（减少 GPU 负担，保持观感） */
+    .flower-side::before {
+        filter: blur(20px);
+    }
+    .flower-side::after {
+        filter: blur(8px);
     }
 }
 
-#canvas{
-    margin: 0 auto;
+@media (max-width: 480px) {
+    .music-text {
+        display: none;
+    }
+
+    .music-control {
+        padding: 8px 12px;
+    }
+
+    /* 超小屏：标题与月亮不重叠，提示文字贴安全区 */
+    .page-title {
+        top: 62px;
+        font-size: 1.3rem;
+    }
+
+    .flower-side {
+        top: 118px;
+        left: 78px;
+    }
+
+    /* 触摸目标最小 44px 可点击区域（移动端易用性） */
+    .back-btn, .music-control {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+}
+
+/* ===== 手机横屏适配（仅移动宽度 ≤1024px，高度 < 500px） ===== */
+/* 注意：必须限定 max-width，否则 PC 矮窗口（宽屏高度<500）会误触发 */
+@media (max-width: 1024px) and (orientation: landscape) and (max-height: 500px) {
+    /* 标题：保持水平居中，下移避开顶部按钮/月亮（横向空间充裕） */
+    .page-title {
+        top: 64px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 1.2rem;
+        letter-spacing: 4px;
+    }
+
+    /* 心形月亮：贴左上角按钮下方，避开返回按钮与安全区 */
+    .flower-side {
+        top: 12px;
+        left: 110px;
+        width: clamp(36px, 9vh, 56px);
+        height: clamp(36px, 9vh, 56px);
+    }
+
+    /* 粒子文字：垂直居中偏下，避开标题与顶部元素（!important 覆盖 main.js 内联样式） */
+    #canvas {
+        top: 58% !important;
+    }
+
+    .stage-side #canvas {
+        max-width: 88vw;
+    }
+
+    /* 提示文字：贴底部安全区 */
+    .hint-text {
+        bottom: 12px;
+        font-size: 0.7rem;
+    }
+
+    /* 按钮更紧凑，贴合横屏 */
+    .back-btn {
+        top: calc(10px + env(safe-area-inset-top));
+        left: calc(10px + env(safe-area-inset-left));
+        padding: 7px 12px;
+        font-size: 0.75rem;
+        min-height: 36px;
+    }
+
+    .music-control {
+        top: calc(10px + env(safe-area-inset-top));
+        right: calc(10px + env(safe-area-inset-right));
+        padding: 7px 12px;
+        font-size: 0.75rem;
+        min-height: 36px;
+    }
+
+    .music-text {
+        display: none;
+    }
 }

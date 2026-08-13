@@ -1,0 +1,95 @@
+/* ============================================
+   万国爱语爱心边框
+   容器 .love 由 js/love.js（基于 d3）填充各语言"爱"的 span
+   本文件把爱心铺满视口、作为页面边框，并做淡化处理避免喧宾夺主
+   ============================================ */
+
+.love {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;            /* 移动端动态视口兜底 */
+    overflow: hidden;
+    pointer-events: none;      /* 不阻挡页面点击/滚动 */
+    z-index: 0;                /* 垫底：内容 .content(z-index:1) 在上 */
+}
+
+.love span {
+    position: absolute;
+    top: 0;
+    left: 0;
+    color: rgba(214, 51, 108, 0.30);   /* 淡雅粉 */
+    font-size: clamp(11px, 1.3vw, 15px);
+    font-family: sans-serif;
+    text-shadow: 0 0 8px rgba(255, 160, 190, 0.35);
+    /* transform: translateX 与 translateY 均为合成器属性（GPU），
+       避免 animation 触发逐帧布局重排，移动端更流畅 */
+    animation:
+        x-move 10s ease-in-out infinite alternate,
+        y-move 20s linear infinite;
+    animation-delay: calc(20s / var(--particles) * var(--n) * -1);        
+    /* 接力变实：相位偏移 */
+     /* 位置散布：满心 */
+    /*
+    animation-delay:
+        calc(20s / var(--particles) * var(--n) * -1),  
+        calc(var(--lit-delay, 0s));                     
+    */
+    user-select: none;
+}
+
+/* 第一个词（"愛"）作为心形点缀：略大但仍淡雅 */
+.love span:first-child {
+    color: rgba(214, 51, 108, 0.55);
+    font-size: 1.7em;
+    text-shadow:
+        0 0 4px rgba(214, 51, 108, 0.40),
+        0 0 12px rgba(255, 160, 190, 0.50);
+    z-index: 1;
+}
+
+/* 点亮标记：全局淡化的基础上，让"正经过心形轮廓"的词语变实 */
+/* 通过 y-move 的相位差，实现沿心形轮廓一圈"接力变实" */
+.love span.lit {
+    color: rgba(230, 90, 130, 0.95);
+    text-shadow:
+        0 0 4px rgba(230, 90, 130, 0.60),
+        0 0 14px rgba(255, 170, 200, 0.70);
+}
+
+/* 左右来回摆动 → 横向展开成心宽
+   注意：x-move 必须用 left（布局属性）而非 transform，
+   因为 span 同时运行 y-move（transform: translateY 画心形曲线），
+   两个动画若都用 transform 会互相覆盖，横向摆动会失效。 */
+@keyframes x-move {
+    to { left: 100vw; }
+}
+
+/* 沿心形高度曲线运动（相对视口高度缩放：0 = 顶部，100vh = 底部心尖） */
+/* opacity 波形：淡(0.35) → 左上峰顶变实(1) → 保持 → 心尖恢复淡，
+   相位差使"高亮词"沿轮廓接力移动，每帧恰有一个明显的"爱" */
+@keyframes y-move {
+    0%    { transform: translateY(40vh);  opacity: 0.35; }
+    10%   { transform: translateY(10vh);  opacity: 0.35; }
+    14%   { transform: translateY(1.6vh); opacity: 0.35; }
+    15%   { transform: translateY(1.1vh); opacity: 1; }     /* 左上峰顶 → 变实 */
+    18%   { transform: translateY(0);     opacity: 1; }
+    20%   { transform: translateY(1.1vh); opacity: 1; }
+    22%   { transform: translateY(7.8vh); opacity: 1; }
+    24%   { transform: translateY(14.4vh); opacity: 1; }
+    25%   { transform: translateY(24.4vh); opacity: 1; }
+    26%   { transform: translateY(14.4vh); opacity: 1; }
+    28%   { transform: translateY(7.8vh); opacity: 1; }
+    30%   { transform: translateY(1.1vh); opacity: 1; }
+    32%   { transform: translateY(0);     opacity: 1; }
+    35%   { transform: translateY(1.1vh); opacity: 0.35; }  /* 峰顶后回落变淡 */
+    40%   { transform: translateY(10vh);  opacity: 0.35; }
+    50%   { transform: translateY(40vh);  opacity: 0.35; }
+    71%   { transform: translateY(95.6vh); opacity: 0.35; }
+    72.5% { transform: translateY(97.8vh); opacity: 0.35; }
+    75%   { transform: translateY(100vh); opacity: 0.35; }
+    77.5% { transform: translateY(97.8vh); opacity: 0.35; }
+    79%   { transform: translateY(95.6vh); opacity: 0.35; }
+    100%  { transform: translateY(40vh);  opacity: 0.35; }
+}

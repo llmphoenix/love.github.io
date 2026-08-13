@@ -1,94 +1,154 @@
 <!DOCTYPE HTML>
-<html>
+<html lang="zh-CN">
 <head>
-	<title>玥爱明</title>
-	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-	<style type="text/css">
-		@font-face {
-			font-family: digit;
-			src: url('digital.ttf') format("truetype");
-		}
-	</style>
-	<link href="css/default.css" type="text/css" rel="stylesheet">
-	<script type="text/javascript" src="js/jquery.js"></script>
-	<script type="text/javascript" src="js/garden.js"></script>
-	<script type="text/javascript" src="js/functions.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>代码情书 - 明爱玥</title>
+    <link href="css/default.css?v=20260814-landfix" type="text/css" rel="stylesheet">
+    <script type="text/javascript" src="js/jquery.js"></script>
+    <script type="text/javascript" src="js/garden.js?v=20260814-mobile"></script>
+    <script type="text/javascript" src="js/heart-flowers.js?v=20260814-mobile"></script>
+    <script type="text/javascript" src="js/functions.js?v=20260814-mobile"></script>
+    <script type="text/javascript" src="../../js/timer.js?v=20260814-mobile"></script>
+    <!-- 爱心流星鼠标轨迹拖尾 -->
+    <script type="text/javascript" src="../../js/heart-trail.js?v=20260814-mobile"></script>
+    <!-- 通用天气效果库（雨天/雪天，随机启用） -->
+    <script type="text/javascript" src="../../js/weather.js?v=20260814-mobile"></script>
+    <!-- 统一背景音乐播放器（随机播放，跨页面延续） -->
+    <script type="text/javascript" src="../../js/music-player.js?v=20260814-mobile"></script>
 </head>
 
 <body>
-<div id="mainDiv">
-	<div id="content">
-		<div id="code">
-			<span class="comments">人生白驹过隙，个中滋味，如人饮水，冷暖自知。</span><br/>
-			<span class="comments">无非是笑笑别人，然后被别人笑笑而已，是非对错，皆过眼云烟。</span><br/>
-			<span class="placeholder"></span><span class="keyword"></span><br/>
-			<span class="placeholder"></span><span class="placeholder"></span><br/>
-			<span class="placeholder"></span><span class="keyword"></span><br/>
-			<span class="placeholder"></span><span class="placeholder"></span><br/>
-			<!-- <span class="string">秋风清，秋月明，</span><br/>
-			<span class="string">落叶聚还散，寒鸦栖复惊。</span><br/>
-			<span class="string">相思相见知何日？此时此夜难为情！</span><br/>
-			<span class="string">入我相思门，知我相思苦。</span><br/>
-			<span class="string">长相思兮长相忆，短相思兮无穷极。</span><br/>
-			<span class="string">早知如此绊人心，何如当初莫相识。</span><br/> -->
-			<span class="string">问世间，情为何物，直教生死相许？</span><br/>
-			<span class="string">天南地北双飞客，老翅几回寒暑。</span><br/>
-			<span class="string">欢乐趣，离别苦，就中更有痴儿女。</span><br/>
-			<span class="string">君应有语：渺万里层云，千山暮雪，只影向谁去？</span><br/>
-			<span class="string">横汾路，寂寞当年箫鼓，荒烟依旧平楚。</span><br/>
-			<span class="string">招魂楚些何嗟及，山鬼暗啼风雨。</span><br/>
-			<span class="string">天也妒，未信与，莺儿燕子俱黄土。</span><br/>
-			<span class="string">千秋万古，为留待骚人，狂歌痛饮，来访雁丘处。</span><br/>
-			<span class="placeholder"></span><span class="keyword"></span><br/>
-			<span class="placeholder"></span><span class="placeholder"></span><br/>
-			<span class="placeholder"></span><span class="keyword"></span><br/>
-			<span class="placeholder"></span><span class="placeholder"></span><br/>	
-			<span class="keyword">唯爱门前双柳树，枝枝叶叶不相离</span><br/>
-			<span class="keyword">只愿君心似我心，定不负相思意</span><br/>
-		</div>
-		<div id="loveHeart">
-			<canvas id="garden"></canvas>
-			<div id="words">
-				<div id="messages">
-					甄玥，爱你，Forever
-					<div id="elapseClock"></div>
-				</div>
-				<div id="loveu">
-					You Jump， I Jump.<br/>
-					<div class="signature">明爱玥</div>
-				</div>
-			</div>
-		</div>
-	</div>
-</div>
-<script type="text/javascript">
-	var offsetX = $("#loveHeart").width() / 2;
-	var offsetY = $("#loveHeart").height() / 2 - 55;
+    <a href="../../index.html" class="back-btn">← 返回</a>
 
-	var together = "2022-11-20";
-	if (!document.createElement('canvas').getContext) {
-		var msg = document.createElement("div");
-		msg.id = "errorMsg";
-		msg.innerHTML = "Your browser doesn't support HTML5!<br/>Recommend use Chrome 14+/IE 9+/Firefox 7+/Safari 4+";
-		document.body.appendChild(msg);
-		$("#code").css("display", "none")
-		$("#copyright").css("position", "absolute");
-		$("#copyright").css("bottom", "10px");
-		document.execCommand("stop");
-	} else {
-		setTimeout(function () {
-			startHeartAnimation();
-		}, 5000);
+    <div class="music-control" id="musicBtn">
+        <span class="music-icon">🎵</span>
+        <span class="music-text">播放音乐</span>
+    </div>
 
-		timeElapse(together);
-		setInterval(function () {
-			timeElapse(together);
-		}, 500);
+    <div id="mainDiv">
+        <div id="content">
+            <div id="loveHeart">
+                <!-- 底层：镭射心形花朵（闪烁背景层） -->
+                <canvas id="heartCanvas"></canvas>
+                <!-- 上层：心形花园粒子花 -->
+                <canvas id="garden"></canvas>
+                <div id="words">
+                    <div id="messages">
+                        甄玥，爱你，Forever
+                        <div id="elapseClock"></div>
+                    </div>
+                    <div id="loveu">
+                        You Jump， I Jump.<br/>
+                        <div class="signature">—— 明爱玥</div>
+                    </div>
+                </div>
+            </div>
 
-		adjustCodePosition();
-		$("#code").typewriter();
-	}
-</script>
+            <div id="code">
+                <span class="comments">爱意从不是一时心动，</span><br/>
+                <span class="comments">是岁岁年年，满心满眼的偏爱，系于一人，</span><br/>
+                <span class="comments">是三餐四季，朝暮烟火的温柔，皆予你身。</span><br/>            
+            <span class="placeholder"></span><span class="keyword"></span><br/>
+            <span class="placeholder"></span><span class="placeholder"></span><br/>
+            <!-- <span class="string">秋风清，秋月明，</span><br/>
+            <span class="string">落叶聚还散，寒鸦栖复惊。</span><br/>
+            <span class="string">相思相见知何日？此时此夜难为情！</span><br/>
+            <span class="string">入我相思门，知我相思苦。</span><br/>
+            <span class="string">长相思兮长相忆，短相思兮无穷极。</span><br/>
+            <span class="string">早知如此绊人心，何如当初莫相识。</span><br/> -->
+            <!-- <span class="string">问世间，情为何物，直教生死相许？</span><br/>
+            <span class="string">天南地北双飞客，老翅几回寒暑。</span><br/>
+            <span class="string">欢乐趣，离别苦，就中更有痴儿女。</span><br/>
+            <span class="string">君应有语：渺万里层云，千山暮雪，只影向谁去？</span><br/>
+            <span class="string">横汾路，寂寞当年箫鼓，荒烟依旧平楚。</span><br/>
+            <span class="string">招魂楚些何嗟及，山鬼暗啼风雨。</span><br/>
+            <span class="string">天也妒，未信与，莺儿燕子俱黄土。</span><br/>
+            <span class="string">千秋万古，为留待骚人，狂歌痛饮，来访雁丘处。</span><br/> -->
+            <span class="string">朝夕相伴两心同，眼底温柔胜万红。</span><br/>
+            <span class="string">纵有人间千万景，此生只愿与君逢。</span><br/>
+            <span class="placeholder"></span><span class="placeholder"></span><br/>
+            <span class="string">一寸相思一寸浓，清风明月寄情衷。</span><br/>
+            <span class="string">不求锦衣富贵身，岁岁牵君度秋冬。</span><br/>
+            <span class="placeholder"></span><span class="placeholder"></span><br/>
+            <span class="string">何须衷肠两相知，眼底藏尽万般痴。</span><br/>
+            <span class="string">风雨浮沉皆共渡，情深不负少年时。</span><br/>     
+            <span class="placeholder"></span><span class="keyword"></span><br/>
+            <span class="placeholder"></span><span class="placeholder"></span><br/>	
+            <span class="keyword">唯爱门前双柳树，枝枝叶叶不相离。</span><br/>
+            <span class="keyword">只愿君心似我心，定不负相思意。</span><br/>
+        </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var together = "2022-11-20T19:00:00";
+
+        if (!document.createElement('canvas').getContext) {
+            var msg = document.createElement("div");
+            msg.id = "errorMsg";
+            msg.innerHTML = "您的浏览器不支持HTML5<br/>建议使用 Chrome / Firefox / Safari 最新版本";
+            document.body.appendChild(msg);
+            $("#code").css("display", "none");
+        } else {
+            $(document).ready(function() {
+                setTimeout(function () {
+                    startHeartAnimation();
+                }, 3000);
+
+                // 恋爱计时（逻辑统一在 js/timer.js，clock 模式渲染到 #elapseClock）
+                LoveTimer.init({ startDate: together, mode: 'clock' });
+
+				// adjustCodePosition();
+                $("#code").typewriter();
+            });
+        }
+
+        // 背景音乐（随机播放，逻辑统一在 js/music-player.js）
+        // 注意：在 $(document).ready 外初始化，避免与 jQuery 无关的依赖
+        MusicPlayer.init({ audioDir: '../../audio', buttonId: 'musicBtn' });
+
+        // 随机天气效果（雨天/雪天 + 随机强度，小雨~雷暴雨 / 小雪~暴风雪）
+        // 参考：Weather.rain('heavy') / Weather.snow('blizzard') / Weather.random()
+        if (window.Weather) {
+            Weather.random();
+
+            // 鼠标点击或触屏点击：重新随机强度（排除音乐按钮 / 返回按钮区域）
+            // 统一用 pointerup 处理，避免 click + touchstart 双触发（一次点击跳 2 级）
+            function isControlClick(target) {
+                return !!(target && typeof target.closest === 'function' &&
+                    (target.closest('.back-btn') || target.closest('.music-control')));
+            }
+
+            var lastReroll = 0;
+            function rerollWeather() {
+                var now = Date.now();
+                // 防抖：同一瞬间的 click+touchstart 视为一次
+                if (now - lastReroll < 400) return;
+                lastReroll = now;
+                if (window.Weather) {
+                    if (Weather.isActive()) {
+                        // 保持当前雨/雪类型，仅随机新强度
+                        Weather.setLevel(Weather.randomLevel(Weather.getType()));
+                    } else {
+                        Weather.random();
+                    }
+                }
+            }
+
+            if (window.PointerEvent) {
+                document.addEventListener('pointerup', function (e) {
+                    if (!isControlClick(e.target)) rerollWeather();
+                }, false);
+            } else {
+                document.addEventListener('click', function (e) {
+                    if (!isControlClick(e.target)) rerollWeather();
+                }, false);
+                document.addEventListener('touchstart', function (e) {
+                    if (!isControlClick(e.target)) rerollWeather();
+                }, false);
+            }
+        }
+    </script>
 </body>
 </html>

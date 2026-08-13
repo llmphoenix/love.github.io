@@ -3,13 +3,10 @@
   window.webkitRequestAnimationFrame || window.msRequestAnimationFrame
 
   const FRAME_RATE = 60
-  const PARTICLE_NUM = 2000
   const RADIUS = Math.PI * 2
-  const CANVASWIDTH = 1000
-  const CANVASHEIGHT = 150
   const CANVASID = 'canvas'
 
-  let texts = ['甄玥', 'I Love You', '愿你与我相伴', '幸福快乐，儿孙满堂', '矢志不渝，坚不可摧', '君为我', '我自当为你']
+  let texts = ['甄玥', 'I Love You', '愿你与我相伴', '幸福快乐', '儿孙满堂', '君为我', '我自当为你', '执子之手，矢志不渝']
 
   let canvas,
     ctx,
@@ -17,7 +14,30 @@
     quiver = true,
     text = texts[0],
     textIndex = 0,
+    CANVASWIDTH = 1000,
+    CANVASHEIGHT = 150,
+    PARTICLE_NUM = 2000,
     textSize = 70
+
+  let textWidth = 0
+
+  function setCanvasSize() {
+    var screenWidth = window.innerWidth;
+    // 移动端优先：CSS 会再按 92vw 缩放，逻辑尺寸保持清晰即可
+    CANVASWIDTH = Math.min(Math.max(screenWidth * 0.9, 300), 1000);
+    // 移动端提高画布高度比例（0.22），让文字更大更饱满、粒子更明显
+    CANVASHEIGHT = Math.min(CANVASWIDTH * (screenWidth <= 480 ? 0.22 : 0.18), 150);
+    // 粒子密度：移动端稍密一点，保证字形完整清晰（但不过载）
+    var density = screenWidth <= 480 ? 55 : 75;
+    PARTICLE_NUM = Math.floor(CANVASWIDTH * CANVASHEIGHT / density);
+    textSize = Math.floor(CANVASHEIGHT * 0.55);
+
+    if (canvas) {
+      canvas.width = CANVASWIDTH;
+      canvas.height = CANVASHEIGHT;
+    }
+    textWidth = 0 // 强制重算文字宽度
+  }
 
   function draw () {
     ctx.clearRect(0, 0, CANVASWIDTH, CANVASHEIGHT)
@@ -25,7 +45,11 @@
     ctx.textBaseline = 'middle'
     ctx.fontWeight = 'bold'
     ctx.font = textSize + 'px \'SimHei\', \'Avenir\', \'Helvetica Neue\', \'Arial\', \'sans-serif\''
-    ctx.fillText(text, (CANVASWIDTH - ctx.measureText(text).width) * 0.5, CANVASHEIGHT * 0.5)
+    // 文字宽度缓存：文本不变时避免每帧 measureText（移动端省电）
+    if (textWidth === 0) {
+      textWidth = ctx.measureText(text).width
+    }
+    ctx.fillText(text, (CANVASWIDTH - textWidth) * 0.5, CANVASHEIGHT * 0.5)
 
     let imgData = ctx.getImageData(0, 0, CANVASWIDTH, CANVASHEIGHT)
 
@@ -41,10 +65,10 @@
   }
 
   function particleText (imgData) {
-    // 点坐标获取
     var pxls = []
-    for (var w = CANVASWIDTH; w > 0; w -= 3) {
-      for (var h = 0; h < CANVASHEIGHT; h += 3) {
+    var step = Math.max(2, Math.floor(CANVASWIDTH / 300))
+    for (var w = CANVASWIDTH; w > 0; w -= step) {
+      for (var h = 0; h < CANVASHEIGHT; h += step) {
         var index = (w + h * (CANVASWIDTH)) * 4
         if (imgData.data[index] > 1) {
           pxls.push([w, h])
@@ -105,34 +129,64 @@
   }
 
   function setDimensions () {
-    canvas.width = CANVASWIDTH
-    canvas.height = CANVASHEIGHT
+    setCanvasSize()
     canvas.style.position = 'absolute'
-    canvas.style.left = '0%'
+    canvas.style.left = '50%'
     canvas.style.top = '30%'
-    canvas.style.bottom = '30%'
-    canvas.style.right = '0%'
-    canvas.style.marginTop = window.innerHeight * .15 + 'px'
+    canvas.style.transform = 'translate(-50%, -50%)'
   }
 
   function event () {
-    document.addEventListener('click', function (e) {
+    // 统一用 pointerup 处理点击切换文字（桌面鼠标 + 移动触摸只触发一次）
+    // 兼容不支持 PointerEvent 的老设备：回退到 click/touchstart 二选一
+    var lastSwitch = 0
+    function isButtonTarget(e) {
+      var t = e.target
+      if (!t || !t.closest) return false
+      return t.closest('.back-btn') || t.closest('.music-control') || t.closest('#heartCanvas')
+    }
+    function switchText() {
+      var now = Date.now()
+      // 防抖：同一瞬间的 click+touchstart 视为一次
+      if (now - lastSwitch < 400) return
+      lastSwitch = now
       textIndex++
       if (textIndex >= texts.length) {
         textIndex = 0
       }
       text = texts[textIndex]
-      console.log(textIndex)
-    }, false)
+      textWidth = 0 // 文字改变 → 重算宽度
+    }
 
-    document.addEventListener('touchstart', function (e) {
-      textIndex++
-      if (textIndex >= texts.length) {
-        textIndex = 0
-      }
-      text = texts[textIndex]
-      console.log(textIndex)
-    }, false)
+    if (window.PointerEvent) {
+      document.addEventListener('pointerup', function (e) {
+        if (isButtonTarget(e)) return
+        switchText()
+      }, false)
+    } else {
+      document.addEventListener('touchend', function (e) {
+        if (isButtonTarget(e)) return
+        switchText()
+      }, false)
+      document.addEventListener('click', function (e) {
+        if (isButtonTarget(e)) return
+        switchText()
+      }, false)
+    }
+
+    // 窗口大小变化时重新调整
+    var resizeTimer
+    window.addEventListener('resize', function () {
+      clearTimeout(resizeTimer)
+      resizeTimer = setTimeout(function () {
+        setCanvasSize()
+        // 重新初始化粒子
+        particles = []
+        for (var i = 0; i < PARTICLE_NUM; i++) {
+          particles[i] = new Particle(canvas)
+        }
+      }, 300)
+    })
   }
 
   function init () {
@@ -140,7 +194,7 @@
     if (canvas === null || !canvas.getContext) {
       return
     }
-    ctx = canvas.getContext('2d')
+    ctx = canvas.getContext('2d', { willReadFrequently: true })
     setDimensions()
     event()
 
@@ -155,25 +209,17 @@
     constructor (canvas) {
       let spread = canvas.height
       let size = Math.random() * 1.2
-      // 速度
-      this.delta = 0.06
-      // 现在的位置
+      this.delta = 0.1  // 粒子向目标移动速度（0.06 → 0.1，切换文字时流动更明显）
       this.x = 0
       this.y = 0
-      // 上次的位置
       this.px = Math.random() * canvas.width
       this.py = (canvas.height * 0.5) + ((Math.random() - 0.5) * spread)
-      // 记录点最初的位置
       this.mx = this.px
       this.my = this.py
-      // 点的大小
       this.size = size
-      // this.origSize = size
-      // 是否用来显示字
       this.inText = false
-      // 透明度相关
       this.opacity = 0
-      this.fadeInRate = 0.005
+      this.fadeInRate = 0.012  // 淡入更快（0.005 → 0.012），切换后文字快速显现
       this.fadeOutRate = 0.03
       this.opacityTresh = 0.98
       this.fadingOut = true
@@ -206,14 +252,6 @@
       ctx.fill()
     }
   }
-  
-  var isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
-    if(!isChrome){
-      $('#iframeAudio').remove()
-  }
-  
-  // setTimeout(() => {
-    init()  
-  // }, 4000);
-  // mp3.play()
+
+  init()
 })(window)
