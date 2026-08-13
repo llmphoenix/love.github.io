@@ -92,6 +92,8 @@ body {
     max-width: 1200px;
     width: 100%;
     flex-wrap: wrap;
+    flex: 0 0 auto; /* 不伸缩，宽度由 width 决定 */
+    min-width: 0;
 }
 
 /* 爱心区域 */
@@ -102,10 +104,23 @@ body {
     flex-shrink: 0;
 }
 
-#garden {
+/* 底层：镭射心形花朵画布（铺满 #loveHeart，位于 #garden 下方） */
+#heartCanvas {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     display: block;
+    z-index: 0;
+}
+
+#garden {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: 1; /* 叠在花朵画布之上 */
 }
 
 #words {
@@ -298,13 +313,15 @@ body[data-theme="t5"] {
     }
 
     #loveHeart {
-        width: 420px;
-        height: 420px;
+        width: min(400px, calc(100% - 360px - 20px));
+        height: min(400px, calc(100% - 360px - 20px));
+        flex-shrink: 0;
     }
 
     #code {
         width: 360px;
         font-size: 12px;
+        flex-shrink: 0;
     }
 }
 
@@ -319,21 +336,24 @@ body[data-theme="t5"] {
     #content {
         flex-direction: column;
         gap: 20px;
+        width: 100%; /* 配合 flex:none，明确宽度避免塌陷 */
     }
 
     #loveHeart {
-        width: 100%;
+        width: min(100%, 380px);
         max-width: 380px;
         height: 380px;
         order: 1;
+        align-self: center;
     }
 
     #code {
-        width: 100%;
+        width: min(100%, 380px);
         max-width: 380px;
         order: 2;
         font-size: 11px;
         padding: 20px;
+        align-self: center;
     }
 
     .back-btn {
