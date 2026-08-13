@@ -117,7 +117,13 @@ function startHeartAnimation() {
 				} else {
 					b++
 				}
-				d.html(c.substring(0, b) + (b & 1 ? "_" : ""));
+                // d.html(c.substring(0, b) + (b & 1 ? "_" : ""));
+                // d.html(c.substring(0, b) + (b & 1 ? "." : ""));
+				// 光标：零宽度 span（.caret）里的 "_" 溢出显示但不占布局空间，
+				// 行尾不会把最后一个字挤到下一行 → 不引起 #code 高度/位置抖动。
+				// 光标闪烁由独立的 caretBlink 定时器切换 visibility 完成，
+				// 不随每帧 innerHTML 重建而重置，也不触发重排。
+				d.html(c.substring(0, b) + '<span class="caret">_</span>');
 				if (b >= c.length) {
 					clearInterval(e)
 				}
@@ -125,6 +131,15 @@ function startHeartAnimation() {
 		});
 		return this
 	}
+})(jQuery);
+
+// 打字光标闪烁：独立定时器，不影响打字布局
+(function ($) {
+	var on = false;
+	setInterval(function () {
+		on = !on;
+		$("#code .caret").css("visibility", on ? "visible" : "hidden");
+	}, 400);
 })(jQuery);
 
 function timeElapse(c) {

@@ -145,6 +145,17 @@ body {
     font-style: italic;
 }
 
+/* 打字光标：零宽度（不占布局空间、行尾不挤换行），"_" 溢出显示；
+   闪烁由 functions.js 的独立定时器切换 visibility 完成（不触发重排） */
+#code .caret {
+    display: inline-block;
+    width: 0;
+    overflow: visible;
+    color: #d6336c;
+    font-weight: bold;
+    visibility: visible;
+}
+
 #errorMsg {
     width: 100%;
     text-align: center;
