@@ -182,8 +182,8 @@ initFireflies();
 
 // 桃花树（相对坐标）—— 男女起始位置左右两边，种在弧形地面上
 var peachTrees = [
-  { x: 0.30, baseY: 0.90, h: 0.42, s: 1.0 },   // 男生左侧
-  { x: 0.70, baseY: 0.90, h: 0.42, s: 1.0 }    // 女生右侧
+  { x: 0.30, baseY: 0.906, h: 0.42, s: 1.0 },   // 男生左侧
+  { x: 0.70, baseY: 0.906, h: 0.42, s: 1.0 }    // 女生右侧
 ];
 
 // 飘落桃花瓣（相对坐标，少量）
@@ -414,7 +414,7 @@ function drawCouple(p) {
   var bh = s * 1.26;   // 男生：高
   var gh = s * 1.20;   // 女生：穿高跟鞋，比男生矮一点
   var cx = width * 0.5;
-  var cy = height * 0.90;   // 站立在地平线上
+  var cy = height * 0.906;  // 站立在地面弧线上（略低于 gndCy 以踩稳碎石）
   var sep = p.dist * s * 0.92;
   var op = p.opacity;
   var pairCx = cx;
@@ -521,107 +521,135 @@ function drawGirl(ctx, x, y, h, p, op) {
   var path = getGirlPath();
   if (!path) return;
   var scale = h / SVG_BBOX.h;
-  ctx.save();
-  ctx.globalAlpha = op;
-  ctx.translate(x, y);          // 脚底中心
-  ctx.scale(-scale, scale);     // 镜像 → 面朝左（与男生面对面）
-  ctx.rotate(-p.kiss * 0.04 + p.lean * 0.02);
-  ctx.translate(-SVG_CX, -SVG_FOOT); // 路径底部（脚）对齐原点
-  // 镜像后身体：头 x 782-819（中心 800.8），身体 x 782-811，脚 y 242
-  // 面朝左 → 脸在 x 782-790，背/长发在 x 800-811
+
+  // ==== 离屏缓存：女生的所有部分（皮肤/头发/裙/鞋）画到离屏 canvas ====
+  // 再整体以 globalAlpha=op 一次性绘制 → 各部分绝对同步淡入淡出
+  var off = getGirlOffscreen();
+  var octx = off.ctx;
+  octx.save();
+  octx.clearRect(0, 0, off.canvas.width, off.canvas.height);
+  octx.globalAlpha = 1;
+  // 离屏画布尺寸 = 人物实际像素尺寸，内容填满
+  octx.translate(off.canvas.width / 2, off.canvas.height);
+  octx.scale(scale, scale);
+  octx.translate(-SVG_CX, -SVG_FOOT);
 
   // ==== 1. 粉红肤色人形（完整轮廓，与男生同比例） ====
-  ctx.fillStyle = 'rgba(238,178,190,1)';
-  ctx.fill(path);
+  octx.fillStyle = 'rgba(238,178,190,1)';
+  octx.fill(path);
 
-  // ==== 2. 黑长直发（遮住半个头 + 垂到胸部，无闪烁） ====
-  ctx.fillStyle = 'rgba(38,28,42,1)';
-  ctx.beginPath();
-  // 遮住后脑半头（覆盖头顶到耳后）
-  ctx.moveTo(799, 129);
-  ctx.quadraticCurveTo(790, 131, 785, 139);   // 头顶到后脑
-  ctx.quadraticCurveTo(781, 149, 783, 158);   // 后脑
-  ctx.lineTo(784, 184);                        // 颈后垂到胸
-  ctx.quadraticCurveTo(785, 192, 782, 194);   // 发尾（胸部位置）
-  ctx.quadraticCurveTo(781, 190, 781, 184);   // 内侧
-  ctx.quadraticCurveTo(780, 170, 779, 158);
-  ctx.quadraticCurveTo(778, 146, 781, 139);   // 回后脑
-  ctx.closePath();
-  ctx.fill();
-  // 额前刘海（遮半头前侧）
-  ctx.beginPath();
-  ctx.moveTo(792, 134);
-  ctx.quadraticCurveTo(787, 137, 785, 143);
-  ctx.quadraticCurveTo(785, 148, 787, 151);
-  ctx.quadraticCurveTo(790, 146, 793, 140);
-  ctx.closePath();
-  ctx.fill();
+  // ==== 2. 黑长直发（覆盖头部后脑+头顶，左脸保持肤色 + 垂到胸部） ====
+  octx.fillStyle = 'rgba(38,28,42,1)';
+  octx.beginPath();
+  octx.arc(799, 149, 20.5, Math.PI * 0.55, Math.PI * 1.9);  // 覆盖头顶+后脑
+  octx.closePath();
+  octx.fill();
+  // 垂到胸部的长发（后脑侧）
+  octx.beginPath();
+  octx.moveTo(801, 149);
+  octx.quadraticCurveTo(807, 155, 807, 178);
+  octx.lineTo(808, 195);
+  octx.quadraticCurveTo(809, 205, 804, 206);
+  octx.quadraticCurveTo(803, 200, 803, 192);
+  octx.quadraticCurveTo(801, 172, 801, 160);
+  octx.closePath();
+  octx.fill();
+  // 额前刘海
+  octx.beginPath();
+  octx.moveTo(794, 133);
+  octx.quadraticCurveTo(799, 128, 805, 131);
+  octx.quadraticCurveTo(808, 134, 807, 139);
+  octx.quadraticCurveTo(801, 137, 794, 140);
+  octx.closePath();
+  octx.fill();
 
   // ==== 3. 粉红连衣裙（A 字裙：胸腰窄、裙摆宽展） ====
-  ctx.fillStyle = 'rgba(228,120,160,1)';
-  ctx.beginPath();
-  ctx.moveTo(793, 168);                       // 肩前
-  ctx.quadraticCurveTo(791, 178, 790, 188);   // 胸（轻凸）
-  ctx.quadraticCurveTo(792, 196, 795, 203);   // 腰前（收窄）
-  ctx.lineTo(796, 210);                       // 腹
-  ctx.lineTo(796, 217);                       // 髋
-  ctx.quadraticCurveTo(792, 224, 787, 234);   // 裙摆前侧展开
-  ctx.lineTo(785, 240);                       // 裙底前
-  ctx.lineTo(794, 242);                       // 裙底中
-  ctx.lineTo(804, 241);                       // 裙底折
-  ctx.quadraticCurveTo(814, 240, 817, 226);   // 裙摆后侧展开
-  ctx.quadraticCurveTo(819, 212, 815, 202);   // 臀后翘
-  ctx.lineTo(812, 192);                       // 背
-  ctx.lineTo(808, 182);                       // 肩后
-  ctx.lineTo(802, 172);                       // 肩前顶
-  ctx.closePath();
-  ctx.fill();
+  octx.fillStyle = 'rgba(228,120,160,1)';
+  octx.beginPath();
+  octx.moveTo(793, 168);
+  octx.quadraticCurveTo(791, 178, 790, 188);
+  octx.quadraticCurveTo(792, 196, 795, 203);
+  octx.lineTo(796, 210);
+  octx.lineTo(796, 217);
+  octx.quadraticCurveTo(792, 224, 787, 234);
+  octx.lineTo(785, 240);
+  octx.lineTo(794, 242);
+  octx.lineTo(804, 241);
+  octx.quadraticCurveTo(814, 240, 817, 226);
+  octx.quadraticCurveTo(819, 212, 815, 202);
+  octx.lineTo(812, 192);
+  octx.lineTo(808, 182);
+  octx.lineTo(802, 172);
+  octx.closePath();
+  octx.fill();
   // 裙摆褶皱（后侧立体感）
-  ctx.fillStyle = 'rgba(204,96,140,1)';
-  ctx.beginPath();
-  ctx.moveTo(810, 232);
-  ctx.quadraticCurveTo(817, 240, 805, 242);
-  ctx.lineTo(794, 242);
-  ctx.quadraticCurveTo(802, 238, 802, 230);
-  ctx.closePath();
-  ctx.fill();
+  octx.fillStyle = 'rgba(204,96,140,1)';
+  octx.beginPath();
+  octx.moveTo(810, 232);
+  octx.quadraticCurveTo(817, 240, 805, 242);
+  octx.lineTo(794, 242);
+  octx.quadraticCurveTo(802, 238, 802, 230);
+  octx.closePath();
+  octx.fill();
   // 腰带（细腰处）
-  ctx.fillStyle = 'rgba(194,86,130,1)';
-  ctx.fillRect(790, 202, 22, 5);
+  octx.fillStyle = 'rgba(194,86,130,1)';
+  octx.fillRect(790, 202, 22, 5);
 
   // ==== 4. 侧脸五官（面朝左 → 脸在 x 782-790） ====
-  ctx.fillStyle = 'rgba(60,50,48,1)';
-  ctx.beginPath();
-  ctx.ellipse(786, 150, 1.4, 1.0, -0.1, 0, Math.PI * 2);  // 眼
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(60,50,48,0.85)';
-  ctx.lineWidth = 0.7;
-  ctx.beginPath();
-  ctx.moveTo(783, 145);
-  ctx.quadraticCurveTo(786, 144, 789, 146);  // 眉
-  ctx.stroke();
-  ctx.strokeStyle = 'rgba(170,90,90,1)';
-  ctx.beginPath();
-  ctx.arc(785, 159, 1.4, Math.PI * 0.1, Math.PI * 0.9);  // 嘴
-  ctx.stroke();
+  octx.fillStyle = 'rgba(60,50,48,1)';
+  octx.beginPath();
+  octx.ellipse(786, 150, 1.4, 1.0, -0.1, 0, Math.PI * 2);  // 眼
+  octx.fill();
+  octx.strokeStyle = 'rgba(60,50,48,0.85)';
+  octx.lineWidth = 0.7;
+  octx.beginPath();
+  octx.moveTo(783, 145);
+  octx.quadraticCurveTo(786, 144, 789, 146);  // 眉
+  octx.stroke();
+  octx.strokeStyle = 'rgba(170,90,90,1)';
+  octx.beginPath();
+  octx.arc(785, 159, 1.4, Math.PI * 0.1, Math.PI * 0.9);  // 嘴
+  octx.stroke();
   // 腮红
-  ctx.fillStyle = 'rgba(220,140,150,0.35)';
-  ctx.beginPath();
-  ctx.arc(787, 157, 1.8, 0, Math.PI * 2);
-  ctx.fill();
+  octx.fillStyle = 'rgba(220,140,150,0.35)';
+  octx.beginPath();
+  octx.arc(787, 157, 1.8, 0, Math.PI * 2);
+  octx.fill();
 
   // ==== 5. 高跟鞋（红色，鞋尖朝左 = 面朝左） ====
-  ctx.fillStyle = 'rgba(168,64,88,1)';
-  ctx.beginPath();
-  ctx.moveTo(798, 241);
-  ctx.quadraticCurveTo(804, 242, 808, 242);  // 鞋尖朝左（面朝左）
-  ctx.lineTo(810, 246);
-  ctx.lineTo(804, 247);
-  ctx.lineTo(798, 246);
-  ctx.lineTo(795, 242);
-  ctx.closePath();
-  ctx.fill();
+  octx.fillStyle = 'rgba(168,64,88,1)';
+  octx.beginPath();
+  octx.moveTo(798, 241);
+  octx.quadraticCurveTo(804, 242, 808, 242);
+  octx.lineTo(810, 246);
+  octx.lineTo(804, 247);
+  octx.lineTo(798, 246);
+  octx.lineTo(795, 242);
+  octx.closePath();
+  octx.fill();
+  octx.restore();
+
+  // ==== 以整体透明度 op 绘制到主画布（同步淡入淡出） ====
+  ctx.save();
+  ctx.globalAlpha = op;
+  ctx.translate(x, y);
+  ctx.rotate(-p.kiss * 0.04 + p.lean * 0.02);
+  ctx.scale(-1, 1);  // 镜像 → 面朝左
+  ctx.drawImage(off.canvas, -off.canvas.width / 2, -off.canvas.height);
   ctx.restore();
+}
+
+// 女生离屏 canvas（复用，避免每帧创建）
+var _girlOffscreen = null;
+function getGirlOffscreen() {
+  if (!_girlOffscreen) {
+    var cv = document.createElement('canvas');
+    // 尺寸 = SVG 边界框最大范围 × 默认缩放（预留余量）
+    cv.width = 120;
+    cv.height = 200;
+    _girlOffscreen = { canvas: cv, ctx: cv.getContext('2d') };
+  }
+  return _girlOffscreen;
 }
 
 windowResizeHandler();
@@ -674,7 +702,7 @@ function draw(ts) {
   var gndCx = width * 0.5;
   var gndCy = height * 0.90;   // 地平线高度（贴近底部）
   var gndW = width * 0.66;     // 地面横向跨度
-  var gndDrop = height * 0.012; // 弧线下垂量（小）
+  var gndDrop = height * 0.004; // 弧线下垂量（小，尽量平）
   var gndStep = Math.round(gndW / 28); // 碎石段数
   universe.globalAlpha = 0.75;
   universe.fillStyle = '#07070d';
