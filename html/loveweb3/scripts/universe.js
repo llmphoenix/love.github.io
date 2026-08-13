@@ -412,7 +412,7 @@ function ctx_restore_all() { universe.restore(); }
 function drawCouple(p) {
   var s = Math.min(width, height) * 0.085;
   var bh = s * 1.26;   // 男生：高
-  var gh = s * 1.10;   // 女生：穿高跟鞋，比男生矮一点
+  var gh = s * 1.20;   // 女生：穿高跟鞋，比男生矮一点
   var cx = width * 0.5;
   var cy = height * 0.90;   // 站立在地平线上
   var sep = p.dist * s * 0.92;
@@ -516,147 +516,111 @@ function drawBoy(ctx, x, y, h, p, op) {
   ctx.restore();
 }
 
-/** 女生：完整的人（头/腿/脚）· 高跟鞋 · 连衣裙 · 黑长直发 · 侧面体征（面朝左） */
+/** 女生：复用男生 SVG 人形轮廓（镜像朝左）· 肤色人形 + 黑长发 + 连衣裙 + 高跟鞋 */
 function drawGirl(ctx, x, y, h, p, op) {
+  var path = getGirlPath();
+  if (!path) return;
   var scale = h / SVG_BBOX.h;
   ctx.save();
   ctx.globalAlpha = op;
   ctx.translate(x, y);          // 脚底中心
-  ctx.scale(scale, scale);      // 正面（画朝左的女生）
+  ctx.scale(-scale, scale);     // 镜像 → 面朝左（与男生面对面）
   ctx.rotate(-p.kiss * 0.04 + p.lean * 0.02);
-  ctx.translate(-SVG_CX, -SVG_FOOT);
-  // SVG 坐标系：脚底 y=242，头中心 y≈150
-  // 面朝左：脸/胸在 x 小侧，长发/背在 x 大侧
+  ctx.translate(-SVG_CX, -SVG_FOOT); // 路径底部（脚）对齐原点
+  // 镜像后身体：头 x 782-819（中心 800.8），身体 x 782-811，脚 y 242
+  // 面朝左 → 脸在 x 782-790，背/长发在 x 800-811
 
-  // ==== 腿（小腿） + 高跟鞋 ====
-  // 左腿（后）
-  ctx.fillStyle = 'rgba(226,196,166,1)';
-  ctx.beginPath();
-  ctx.moveTo(794, 236);
-  ctx.lineTo(800, 236);
-  ctx.lineTo(800, 243);
-  ctx.lineTo(794, 243);
-  ctx.closePath();
-  ctx.fill();
-  // 右腿（前）
-  ctx.fillStyle = 'rgba(232,204,176,1)';
-  ctx.beginPath();
-  ctx.moveTo(784, 238);
-  ctx.lineTo(792, 238);
-  ctx.lineTo(791, 245);
-  ctx.lineTo(784, 245);
-  ctx.closePath();
-  ctx.fill();
-  // 高跟鞋（红色尖头，右腿明显）
-  ctx.fillStyle = 'rgba(168,64,88,1)';
-  ctx.beginPath();
-  ctx.moveTo(784, 245);
-  ctx.quadraticCurveTo(780, 245, 779, 244);   // 尖头朝左（面朝左）
-  ctx.lineTo(783, 240);
-  ctx.lineTo(788, 240);
-  ctx.lineTo(787, 245);
-  ctx.closePath();
-  ctx.fill();
-  // 高跟鞋跟
-  ctx.fillStyle = 'rgba(140,50,72,1)';
-  ctx.fillRect(786, 245, 2.5, 3);
-  // 左鞋（后腿，简化为平底露一点）
-  ctx.fillStyle = 'rgba(160,60,84,1)';
-  ctx.beginPath();
-  ctx.moveTo(794, 243);
-  ctx.quadraticCurveTo(791, 243, 790, 242);
-  ctx.lineTo(793, 240);
-  ctx.lineTo(798, 240);
-  ctx.lineTo(798, 243);
-  ctx.closePath();
-  ctx.fill();
+  // ==== 1. 粉红肤色人形（完整轮廓，与男生同比例） ====
+  ctx.fillStyle = 'rgba(238,178,190,1)';
+  ctx.fill(path);
 
-  // ==== 黑长直发（笔直垂背，无闪烁） ====
+  // ==== 2. 黑长直发（遮住半个头 + 垂到胸部，无闪烁） ====
   ctx.fillStyle = 'rgba(38,28,42,1)';
   ctx.beginPath();
-  ctx.moveTo(806, 148);
-  ctx.lineTo(828, 156);
-  ctx.lineTo(832, 200);
-  ctx.lineTo(828, 230);         // 背后长发垂到腰
-  ctx.lineTo(816, 234);
-  ctx.lineTo(819, 195);
-  ctx.lineTo(812, 168);
+  // 遮住后脑半头（覆盖头顶到耳后）
+  ctx.moveTo(799, 129);
+  ctx.quadraticCurveTo(790, 131, 785, 139);   // 头顶到后脑
+  ctx.quadraticCurveTo(781, 149, 783, 158);   // 后脑
+  ctx.lineTo(784, 184);                        // 颈后垂到胸
+  ctx.quadraticCurveTo(785, 192, 782, 194);   // 发尾（胸部位置）
+  ctx.quadraticCurveTo(781, 190, 781, 184);   // 内侧
+  ctx.quadraticCurveTo(780, 170, 779, 158);
+  ctx.quadraticCurveTo(778, 146, 781, 139);   // 回后脑
+  ctx.closePath();
+  ctx.fill();
+  // 额前刘海（遮半头前侧）
+  ctx.beginPath();
+  ctx.moveTo(792, 134);
+  ctx.quadraticCurveTo(787, 137, 785, 143);
+  ctx.quadraticCurveTo(785, 148, 787, 151);
+  ctx.quadraticCurveTo(790, 146, 793, 140);
   ctx.closePath();
   ctx.fill();
 
-  // ==== 头（有脸！） ====
-  // 脸（肤色圆，偏左 = 面朝左）
-  ctx.fillStyle = 'rgba(232,200,168,1)';
+  // ==== 3. 粉红连衣裙（A 字裙：胸腰窄、裙摆宽展） ====
+  ctx.fillStyle = 'rgba(228,120,160,1)';
   ctx.beginPath();
-  ctx.arc(799, 151, 12.5, 0, Math.PI * 2);
-  ctx.fill();
-  // 黑发覆盖头顶（露出侧脸）
-  ctx.fillStyle = 'rgba(40,30,44,1)';
-  ctx.beginPath();
-  ctx.arc(801, 149, 13, Math.PI * 0.75, Math.PI * 2.25);
+  ctx.moveTo(793, 168);                       // 肩前
+  ctx.quadraticCurveTo(791, 178, 790, 188);   // 胸（轻凸）
+  ctx.quadraticCurveTo(792, 196, 795, 203);   // 腰前（收窄）
+  ctx.lineTo(796, 210);                       // 腹
+  ctx.lineTo(796, 217);                       // 髋
+  ctx.quadraticCurveTo(792, 224, 787, 234);   // 裙摆前侧展开
+  ctx.lineTo(785, 240);                       // 裙底前
+  ctx.lineTo(794, 242);                       // 裙底中
+  ctx.lineTo(804, 241);                       // 裙底折
+  ctx.quadraticCurveTo(814, 240, 817, 226);   // 裙摆后侧展开
+  ctx.quadraticCurveTo(819, 212, 815, 202);   // 臀后翘
+  ctx.lineTo(812, 192);                       // 背
+  ctx.lineTo(808, 182);                       // 肩后
+  ctx.lineTo(802, 172);                       // 肩前顶
   ctx.closePath();
   ctx.fill();
-  // 刘海（前额，面朝左 → 左侧垂发）
+  // 裙摆褶皱（后侧立体感）
+  ctx.fillStyle = 'rgba(204,96,140,1)';
   ctx.beginPath();
-  ctx.moveTo(787, 150);
-  ctx.quadraticCurveTo(791, 142, 799, 141);
-  ctx.quadraticCurveTo(805, 141, 808, 145);
-  ctx.quadraticCurveTo(801, 145, 795, 149);
-  ctx.quadraticCurveTo(790, 152, 787, 150);
+  ctx.moveTo(810, 232);
+  ctx.quadraticCurveTo(817, 240, 805, 242);
+  ctx.lineTo(794, 242);
+  ctx.quadraticCurveTo(802, 238, 802, 230);
   ctx.closePath();
   ctx.fill();
-  // 侧脸（下颚）露肤 + 小鼻子（面朝左）
-  ctx.fillStyle = 'rgba(232,200,168,1)';
+  // 腰带（细腰处）
+  ctx.fillStyle = 'rgba(194,86,130,1)';
+  ctx.fillRect(790, 202, 22, 5);
+
+  // ==== 4. 侧脸五官（面朝左 → 脸在 x 782-790） ====
+  ctx.fillStyle = 'rgba(60,50,48,1)';
   ctx.beginPath();
-  ctx.arc(794, 150, 8, Math.PI * 0.2, Math.PI * 1.5);
-  ctx.closePath();
+  ctx.ellipse(786, 150, 1.4, 1.0, -0.1, 0, Math.PI * 2);  // 眼
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(60,50,48,0.85)';
+  ctx.lineWidth = 0.7;
+  ctx.beginPath();
+  ctx.moveTo(783, 145);
+  ctx.quadraticCurveTo(786, 144, 789, 146);  // 眉
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(170,90,90,1)';
+  ctx.beginPath();
+  ctx.arc(785, 159, 1.4, Math.PI * 0.1, Math.PI * 0.9);  // 嘴
+  ctx.stroke();
+  // 腮红
+  ctx.fillStyle = 'rgba(220,140,150,0.35)';
+  ctx.beginPath();
+  ctx.arc(787, 157, 1.8, 0, Math.PI * 2);
   ctx.fill();
 
-  // ==== 脖子（头与身体的连接） ====
-  ctx.fillStyle = 'rgba(228,196,164,1)';
+  // ==== 5. 高跟鞋（红色，鞋尖朝左 = 面朝左） ====
+  ctx.fillStyle = 'rgba(168,64,88,1)';
   ctx.beginPath();
-  ctx.moveTo(795, 158);
-  ctx.lineTo(802, 156);
-  ctx.lineTo(803, 174);
-  ctx.lineTo(796, 176);
+  ctx.moveTo(798, 241);
+  ctx.quadraticCurveTo(804, 242, 808, 242);  // 鞋尖朝左（面朝左）
+  ctx.lineTo(810, 246);
+  ctx.lineTo(804, 247);
+  ctx.lineTo(798, 246);
+  ctx.lineTo(795, 242);
   ctx.closePath();
   ctx.fill();
-
-  // ==== 连衣裙（柔粉，完整覆盖身体，比例协调） ====
-  ctx.fillStyle = 'rgba(178,130,152,1)';
-  // 上身 + 胸部微微前凸（侧面体征，只凸一点点）
-  ctx.beginPath();
-  ctx.moveTo(794, 180);
-  ctx.quadraticCurveTo(789, 170, 790, 162);  // 胸微前凸（一点）
-  ctx.lineTo(799, 156);
-  ctx.lineTo(805, 184);
-  ctx.closePath();
-  ctx.fill();
-  // 连衣裙主体：胸 → 细腰（明显收窄） → 臀后翘 → 裙摆展开到膝
-  ctx.beginPath();
-  ctx.moveTo(791, 184);
-  ctx.quadraticCurveTo(799, 194, 796, 205);  // 胸部下方
-  ctx.quadraticCurveTo(793, 212, 789, 214);  // 细腰（明显收窄）
-  ctx.quadraticCurveTo(778, 218, 771, 228);  // 臀后翘
-  ctx.quadraticCurveTo(768, 236, 776, 240);  // 裙摆展开
-  ctx.lineTo(795, 241);
-  ctx.lineTo(807, 238);
-  ctx.quadraticCurveTo(812, 222, 805, 202);  // 裙后侧
-  ctx.quadraticCurveTo(802, 194, 806, 186);
-  ctx.closePath();
-  ctx.fill();
-  // 裙摆立体感
-  ctx.fillStyle = 'rgba(158,110,134,1)';
-  ctx.beginPath();
-  ctx.moveTo(771, 228);
-  ctx.quadraticCurveTo(768, 236, 776, 240);
-  ctx.lineTo(789, 240);
-  ctx.quadraticCurveTo(784, 234, 779, 224);
-  ctx.closePath();
-  ctx.fill();
-  // 腰带（细腰处，突出腰臀曲线）
-  ctx.fillStyle = 'rgba(148,102,126,1)';
-  ctx.fillRect(789, 210, 19, 4);
   ctx.restore();
 }
 

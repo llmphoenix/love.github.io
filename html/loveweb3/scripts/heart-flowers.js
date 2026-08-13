@@ -23,7 +23,7 @@
 
   // 心形曲线参考宽度（参数方程 x ∈ [-16,16]）
   var BASE_HALF = 16
-  var COUNT = 48
+  var COUNT = 180
 
   // 经典心形参数方程（t: 0 ~ 2π，t 增大即沿心形顺时针方向）
   function heartXY (t) {
@@ -52,7 +52,7 @@
   function init () {
     flowers = []
     var scale = Math.min(W, H) / (BASE_HALF * 2 + 4) // 心形宽 32 单位 + 外边距
-    var count = Math.max(26, Math.round(COUNT * (W / 420)))
+    var count = Math.max(90, Math.round(COUNT * (W / 300)))
     for (var i = 0; i < count; i++) {
       flowers.push({
         t0: (i / count) * Math.PI * 2,            // 沿心形均匀分布的起始角度
