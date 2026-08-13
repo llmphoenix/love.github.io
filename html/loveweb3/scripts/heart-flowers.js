@@ -58,7 +58,7 @@
         t0: (i / count) * Math.PI * 2,            // 沿心形均匀分布的起始角度
         orbit: 0.08 + Math.random() * 0.14,       // 轨道顺时针速度（rad/s）
         rot: 0.5 + Math.random() * 1.0,           // 自转速度（顺时针，rad/s）
-        size: 3.5 + Math.random() * 4.5,          // 花朵半径
+        size: 1.2 + Math.random() * 2.0,          // 花朵半径（如星星/萤火虫大小）
         petals: 5 + (Math.random() * 4 | 0),      // 花瓣数 5~8
         hue: (Math.random() * 360) | 0,           // 基准色相（镭射流光起点）
         hueSpeed: 18 + Math.random() * 30,        // 色相流动速度
