@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>心动时刻 - 明爱玥</title>
-    <link rel="stylesheet" href="css/love-frame.css?v=20260814-land">
+    <link rel="stylesheet" href="css/love-frame.css?v=20260814-landfix">
     <style>
         * {
             margin: 0;
@@ -323,9 +323,9 @@
             }
         }
 
-        /* ===== 手机横屏适配（高度 < 500px 且宽度 > 高度） ===== */
-        /* 横屏时视口矮，内容高度放不下：允许滚动 + 压缩布局，避免裁切 */
-        @media (orientation: landscape) and (max-height: 500px) {
+        /* ===== 手机横屏适配（仅移动宽度 ≤1024px，高度 < 500px） ===== */
+        /* 注意：必须限定 max-width，否则 PC 矮窗口（宽屏高度<500）会误触发 */
+        @media (max-width: 1024px) and (orientation: landscape) and (max-height: 500px) {
             html, body {
                 overflow-y: auto;
                 height: auto;

@@ -326,29 +326,29 @@ body {
     }
 }
 
-/* ===== 手机横屏适配（高度 < 500px 且宽度 > 高度） ===== */
-/* 横屏时视口矮，采用横向紧凑布局，避免标题/粒子/提示互相重叠 */
-@media (orientation: landscape) and (max-height: 500px) {
-    /* 标题：移到左上角月亮旁，不再遮挡粒子文字 */
+/* ===== 手机横屏适配（仅移动宽度 ≤1024px，高度 < 500px） ===== */
+/* 注意：必须限定 max-width，否则 PC 矮窗口（宽屏高度<500）会误触发 */
+@media (max-width: 1024px) and (orientation: landscape) and (max-height: 500px) {
+    /* 标题：保持水平居中，下移避开顶部按钮/月亮（横向空间充裕） */
     .page-title {
-        top: 16px;
-        left: 160px;
-        transform: none;
+        top: 64px;
+        left: 50%;
+        transform: translateX(-50%);
         font-size: 1.2rem;
         letter-spacing: 4px;
     }
 
-    /* 心形月亮：贴左上角，避开标题与安全区 */
+    /* 心形月亮：贴左上角按钮下方，避开返回按钮与安全区 */
     .flower-side {
         top: 12px;
-        left: 16px;
+        left: 110px;
         width: clamp(36px, 9vh, 56px);
         height: clamp(36px, 9vh, 56px);
     }
 
-    /* 粒子文字：垂直居中，横向铺满 */
+    /* 粒子文字：垂直居中偏下，避开标题与顶部元素（!important 覆盖 main.js 内联样式） */
     #canvas {
-        top: 50%;
+        top: 58% !important;
     }
 
     .stage-side #canvas {

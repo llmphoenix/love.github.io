@@ -412,9 +412,9 @@ body[data-theme="t5"] {
     }
 }
 
-/* ===== 手机横屏适配（高度 < 500px 且宽度 > 高度） ===== */
-/* 横屏时视口矮：恢复左右布局（覆盖 ≤768 的上下排列），并压缩尺寸避免溢出 */
-@media (orientation: landscape) and (max-height: 500px) {
+/* ===== 手机横屏适配（仅移动宽度 ≤1024px，高度 < 500px） ===== */
+/* 注意：必须限定 max-width，否则 PC 矮窗口（宽屏高度<500）会误触发 */
+@media (max-width: 1024px) and (orientation: landscape) and (max-height: 500px) {
     html, body {
         overflow-y: auto;
     }

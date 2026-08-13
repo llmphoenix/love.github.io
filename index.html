@@ -347,44 +347,72 @@
             }
         }
 
-        /* ===== 手机横屏适配（高度 < 500px 且宽度 > 高度） ===== */
-        @media (orientation: landscape) and (max-height: 500px) {
+        /* ===== 手机横屏适配（仅移动宽度 ≤1024px，高度 < 500px） ===== */
+        /* 注意：必须限定 max-width，否则 PC 矮窗口（宽屏高度<500）会误触发 */
+        @media (max-width: 1024px) and (orientation: landscape) and (max-height: 500px) {
             body {
                 padding-top: 55px;
             }
 
             .main-title {
-                font-size: clamp(1.6rem, 4vw, 2.2rem);
+                font-size: clamp(1.3rem, 3.5vw, 1.8rem);
                 letter-spacing: 4px;
-                margin-bottom: 8px;
+                margin-bottom: 6px;
+            }
+
+            .subtitle {
+                font-size: clamp(0.7rem, 2vw, 0.9rem);
+                letter-spacing: 2px;
             }
 
             .title-section {
-                margin-bottom: 15px;
+                margin-bottom: 10px;
             }
 
             .timer-section {
-                padding: 15px;
-                margin-bottom: 20px;
+                padding: 10px 15px;
+                margin-bottom: 14px;
+                border-radius: 14px;
             }
 
+            .timer-label {
+                margin-bottom: 6px;
+                font-size: 0.75rem;
+            }
+
+            .timer-number {
+                font-size: clamp(1.1rem, 3vw, 1.5rem);
+            }
+
+            /* 三个子页面按钮整体缩小（更紧凑的横向排列） */
             .nav-cards {
                 grid-template-columns: repeat(3, 1fr);
-                gap: 12px;
-                max-width: 760px;
+                gap: 10px;
+                max-width: 560px;
             }
 
             .nav-card {
-                padding: 15px 12px;
+                padding: 10px 8px;
+                border-radius: 14px;
             }
 
             .card-icon {
-                font-size: 1.8rem;
-                margin-bottom: 8px;
+                font-size: 1.4rem;
+                margin-bottom: 4px;
+            }
+
+            .card-title {
+                font-size: 0.8rem;
+                margin-bottom: 3px;
+            }
+
+            .card-desc {
+                font-size: 0.62rem;
             }
 
             .footer-signature {
-                margin-top: 20px;
+                margin-top: 14px;
+                font-size: 0.7rem;
             }
 
             .music-control {

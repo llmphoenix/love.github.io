@@ -674,6 +674,9 @@ createUniverse();
 
 function createUniverse() {
   universe = canva.getContext('2d');
+  // 重要：context 创建后必须设置 DPR transform（windowResizeHandler 早于此处调用，
+  // 那时 universe 还是 undefined，setTransform 未执行）
+  universe.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   for (var i = 0; i < starCount; i++) {
     stars[i] = new Star();

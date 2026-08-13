@@ -25,9 +25,10 @@
     var screenWidth = window.innerWidth;
     // 移动端优先：CSS 会再按 92vw 缩放，逻辑尺寸保持清晰即可
     CANVASWIDTH = Math.min(Math.max(screenWidth * 0.9, 300), 1000);
-    CANVASHEIGHT = Math.min(CANVASWIDTH * 0.18, 150);
-    // 移动端（小屏）适当降低粒子密度，保证流畅
-    var density = screenWidth <= 480 ? 90 : 75;
+    // 移动端提高画布高度比例（0.22），让文字更大更饱满、粒子更明显
+    CANVASHEIGHT = Math.min(CANVASWIDTH * (screenWidth <= 480 ? 0.22 : 0.18), 150);
+    // 粒子密度：移动端稍密一点，保证字形完整清晰（但不过载）
+    var density = screenWidth <= 480 ? 55 : 75;
     PARTICLE_NUM = Math.floor(CANVASWIDTH * CANVASHEIGHT / density);
     textSize = Math.floor(CANVASHEIGHT * 0.55);
 
@@ -208,7 +209,7 @@
     constructor (canvas) {
       let spread = canvas.height
       let size = Math.random() * 1.2
-      this.delta = 0.06
+      this.delta = 0.1  // 粒子向目标移动速度（0.06 → 0.1，切换文字时流动更明显）
       this.x = 0
       this.y = 0
       this.px = Math.random() * canvas.width
@@ -218,7 +219,7 @@
       this.size = size
       this.inText = false
       this.opacity = 0
-      this.fadeInRate = 0.005
+      this.fadeInRate = 0.012  // 淡入更快（0.005 → 0.012），切换后文字快速显现
       this.fadeOutRate = 0.03
       this.opacityTresh = 0.98
       this.fadingOut = true
