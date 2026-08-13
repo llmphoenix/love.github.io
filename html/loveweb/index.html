@@ -95,6 +95,43 @@
             box-shadow: 0 4px 15px rgba(214, 51, 108, 0.2);
         }
 
+        /* 音乐控制按钮 */
+        .music-control {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 50px;
+            padding: 10px 20px;
+            color: #d6336c;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            user-select: none;
+        }
+
+        .music-control:hover {
+            background: rgba(255, 255, 255, 0.7);
+            transform: translateX(3px);
+            box-shadow: 0 4px 15px rgba(214, 51, 108, 0.2);
+        }
+
+        .music-control.playing .music-icon {
+            animation: musicSpin 2s linear infinite;
+        }
+
+        @keyframes musicSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         /* 主内容 */
         .content {
             position: relative;
@@ -275,6 +312,11 @@
 
     <a href="../../index.html" class="back-btn">← 返回</a>
 
+    <div class="music-control" id="musicBtn">
+        <span class="music-icon">🎵</span>
+        <span class="music-text">播放音乐</span>
+    </div>
+
     <div class="content">
         <div class="heart-container">
             <div class="heart-glow"></div>
@@ -353,6 +395,59 @@
                 fallingChars.removeChild(fallingChars.firstChild);
             }
         }, 1000);
+
+        // 背景音乐控制（默认自动播放）
+        var bgMusic = new Audio('../../audio/Broken Elegance.mp3');
+        bgMusic.loop = true;
+        bgMusic.preload = 'auto';
+        var musicBtn = document.getElementById('musicBtn');
+        var isPlaying = false;
+
+        function updateMusicBtn() {
+            musicBtn.querySelector('.music-icon').textContent = isPlaying ? '🎶' : '🎵';
+            musicBtn.querySelector('.music-text').textContent = isPlaying ? '暂停音乐' : '播放音乐';
+            musicBtn.classList.toggle('playing', isPlaying);
+        }
+
+        // 尝试自动播放（浏览器需用户交互才会放行）
+        function tryAutoPlay() {
+            bgMusic.play().then(function() {
+                isPlaying = true;
+                updateMusicBtn();
+            }).catch(function() {
+                // 自动播放被拦截，保持待播放状态
+            });
+        }
+        tryAutoPlay();
+
+        // 首次用户交互时若还没播放，立即尝试播放（覆盖自动播放限制）
+        function tryPlayOnInteract() {
+            if (!isPlaying) {
+                bgMusic.play().then(function() {
+                    isPlaying = true;
+                    updateMusicBtn();
+                }).catch(function(e) {
+                    console.log('播放失败:', e);
+                });
+            }
+        }
+        document.addEventListener('click', tryPlayOnInteract, { once: true });
+        document.addEventListener('touchstart', tryPlayOnInteract, { once: true });
+
+        musicBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (isPlaying) {
+                bgMusic.pause();
+                isPlaying = false;
+            } else {
+                bgMusic.play().then(function() {
+                    isPlaying = true;
+                }).catch(function(e) {
+                    console.log('播放失败:', e);
+                });
+            }
+            updateMusicBtn();
+        });
     </script>
 </body>
 </html>

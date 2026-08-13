@@ -16,6 +16,11 @@
 <body>
     <a href="../../index.html" class="back-btn">← 返回</a>
 
+    <div class="music-control" id="musicBtn">
+        <span class="music-icon">🎵</span>
+        <span class="music-text">播放音乐</span>
+    </div>
+
     <div id="mainDiv">
         <div id="content">
             <div id="loveHeart">
@@ -89,6 +94,61 @@
                 $("#code").typewriter();
             });
         }
+
+        // 背景音乐控制（默认自动播放）
+        (function() {
+            var bgMusic = new Audio('../../audio/Broken Elegance.mp3');
+            bgMusic.loop = true;
+            bgMusic.preload = 'auto';
+            var musicBtn = document.getElementById('musicBtn');
+            var isPlaying = false;
+
+            function updateMusicBtn() {
+                musicBtn.querySelector('.music-icon').textContent = isPlaying ? '🎶' : '🎵';
+                musicBtn.querySelector('.music-text').textContent = isPlaying ? '暂停音乐' : '播放音乐';
+                musicBtn.classList.toggle('playing', isPlaying);
+            }
+
+            // 尝试自动播放（浏览器需用户交互才会放行）
+            function tryAutoPlay() {
+                bgMusic.play().then(function() {
+                    isPlaying = true;
+                    updateMusicBtn();
+                }).catch(function() {
+                    // 自动播放被拦截，保持待播放状态
+                });
+            }
+            tryAutoPlay();
+
+            // 首次用户交互时若还没播放，立即尝试播放（覆盖自动播放限制）
+            function tryPlayOnInteract() {
+                if (!isPlaying) {
+                    bgMusic.play().then(function() {
+                        isPlaying = true;
+                        updateMusicBtn();
+                    }).catch(function(e) {
+                        console.log('播放失败:', e);
+                    });
+                }
+            }
+            document.addEventListener('click', tryPlayOnInteract, { once: true });
+            document.addEventListener('touchstart', tryPlayOnInteract, { once: true });
+
+            musicBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (isPlaying) {
+                    bgMusic.pause();
+                    isPlaying = false;
+                } else {
+                    bgMusic.play().then(function() {
+                        isPlaying = true;
+                    }).catch(function(e) {
+                        console.log('播放失败:', e);
+                    });
+                }
+                updateMusicBtn();
+            });
+        })();
     </script>
 </body>
 </html>

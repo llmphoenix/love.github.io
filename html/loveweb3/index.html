@@ -25,8 +25,8 @@
         </div>
     </div>
 
-    <audio id="bgMusic" loop>
-        <source src="audio/[No Copyright Music] Unconditionally - Broken Elegance.mp3" type="audio/mpeg">
+    <audio id="bgMusic" loop preload="auto">
+        <source src="../../audio/Broken Elegance.mp3" type="audio/mpeg">
     </audio>
 
     <script src="scripts/universe.js"></script>
@@ -39,23 +39,50 @@
         var musicBtn = document.getElementById('musicBtn');
         var isPlaying = false;
 
-        musicBtn.addEventListener('click', function() {
+        function updateMusicBtn() {
+            musicBtn.querySelector('.music-icon').textContent = isPlaying ? '🎶' : '🎵';
+            musicBtn.querySelector('.music-text').textContent = isPlaying ? '暂停音乐' : '播放音乐';
+            musicBtn.classList.toggle('playing', isPlaying);
+        }
+
+        // 尝试自动播放（浏览器需用户交互才会放行）
+        function tryAutoPlay() {
+            bgMusic.play().then(function() {
+                isPlaying = true;
+                updateMusicBtn();
+            }).catch(function() {
+                // 自动播放被拦截，保持待播放状态
+            });
+        }
+        tryAutoPlay();
+
+        // 首次用户交互时若还没播放，立即尝试播放（覆盖自动播放限制）
+        function tryPlayOnInteract() {
+            if (!isPlaying) {
+                bgMusic.play().then(function() {
+                    isPlaying = true;
+                    updateMusicBtn();
+                }).catch(function(e) {
+                    console.log('播放失败:', e);
+                });
+            }
+        }
+        document.addEventListener('click', tryPlayOnInteract, { once: true });
+        document.addEventListener('touchstart', tryPlayOnInteract, { once: true });
+
+        musicBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
             if (isPlaying) {
                 bgMusic.pause();
-                musicBtn.querySelector('.music-icon').textContent = '🎵';
-                musicBtn.querySelector('.music-text').textContent = '播放音乐';
-                musicBtn.classList.remove('playing');
+                isPlaying = false;
             } else {
                 bgMusic.play().then(function() {
-                    musicBtn.querySelector('.music-icon').textContent = '🎶';
-                    musicBtn.querySelector('.music-text').textContent = '暂停音乐';
-                    musicBtn.classList.add('playing');
                     isPlaying = true;
                 }).catch(function(e) {
                     console.log('播放失败:', e);
                 });
             }
-            isPlaying = !isPlaying;
+            updateMusicBtn();
         });
     </script>
 </body>
