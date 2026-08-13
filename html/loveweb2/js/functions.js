@@ -14,9 +14,10 @@ $(function () {
     $(window).resize(function () {
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(function () {
-            // 只在尺寸变化较大时重新初始化
-            if (Math.abs($window.width() - gardenCanvas.width) > 50 ||
-                Math.abs($window.height() - gardenCanvas.height) > 50) {
+            // 只在尺寸变化较大时重新初始化（gardenCanvas.width 含 DPR，需按逻辑尺寸比较）
+            var dpr = Math.min(window.devicePixelRatio || 1, 2);
+            if (Math.abs($window.width() - gardenCanvas.width / dpr) > 50 ||
+                Math.abs($window.height() - gardenCanvas.height / dpr) > 50) {
                 initGarden();
             }
         }, 300);
@@ -53,9 +54,12 @@ function initGarden() {
 
     $garden = $("#garden");
     gardenCanvas = $garden[0];
-    gardenCanvas.width = heartWidth;
-    gardenCanvas.height = heartHeight;
+    // DPR 缩放：高分辨率屏更清晰（移动端上限 2）
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    gardenCanvas.width = heartWidth * dpr;
+    gardenCanvas.height = heartHeight * dpr;
     gardenCtx = gardenCanvas.getContext("2d");
+    gardenCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     gardenCtx.globalCompositeOperation = "lighter";
     garden = new Garden(gardenCtx, gardenCanvas);
 
@@ -79,6 +83,8 @@ function startHeartAnimation() {
     var c = 50;
     var d = 10;
     var b = new Array();
+    // 移动端减少花朵数量（步长加大 → 生成更少花朵），触摸更流畅
+    var step = (window.innerWidth <= 480) ? 0.34 : 0.2;
     var a = setInterval(function () {
         var h = getHeartPoint(d);
         var e = true;
@@ -98,7 +104,7 @@ function startHeartAnimation() {
             clearInterval(a);
             showMessages();
         } else {
-            d += 0.2;
+            d += step;
         }
     }, c);
 }

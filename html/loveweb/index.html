@@ -2,9 +2,9 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>心动时刻 - 明爱玥</title>
-    <link rel="stylesheet" href="css/love-frame.css">
+    <link rel="stylesheet" href="css/love-frame.css?v=20260814-land">
     <style>
         * {
             margin: 0;
@@ -17,6 +17,15 @@
             height: 100%;
             overflow: hidden;
             font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            overscroll-behavior: none;
+        }
+
+        html {
+            touch-action: manipulation;
         }
 
         body {
@@ -283,6 +292,17 @@
                 left: 15px;
                 padding: 8px 15px;
                 font-size: 0.8rem;
+                top: calc(15px + env(safe-area-inset-top));
+                left: calc(15px + env(safe-area-inset-left));
+                min-height: 44px;
+            }
+
+            .music-control {
+                top: 20px;
+                right: 20px;
+                top: calc(20px + env(safe-area-inset-top));
+                right: calc(20px + env(safe-area-inset-right));
+                min-height: 44px;
             }
 
             .heart-container {
@@ -300,6 +320,55 @@
             .love-quote {
                 margin-top: 25px;
                 padding: 0 20px;
+            }
+        }
+
+        /* ===== 手机横屏适配（高度 < 500px 且宽度 > 高度） ===== */
+        /* 横屏时视口矮，内容高度放不下：允许滚动 + 压缩布局，避免裁切 */
+        @media (orientation: landscape) and (max-height: 500px) {
+            html, body {
+                overflow-y: auto;
+                height: auto;
+                min-height: 100%;
+            }
+
+            body {
+                justify-content: flex-start;
+                padding-top: 60px;
+                padding-bottom: 20px;
+            }
+
+            .content {
+                transform: scale(0.85);
+                transform-origin: top center;
+                padding: 10px 0;
+            }
+
+            .heart-container {
+                width: clamp(90px, 20vh, 140px);
+                height: clamp(90px, 20vh, 140px);
+                margin-bottom: 15px;
+            }
+
+            .page-title {
+                margin-bottom: 15px;
+                font-size: 1.4rem;
+            }
+
+            .timer-card {
+                padding: 15px;
+                max-width: 420px;
+            }
+
+            .love-quote {
+                margin-top: 15px;
+                font-size: 0.8rem;
+            }
+
+            .back-btn, .music-control {
+                min-height: 36px;
+                padding: 6px 12px;
+                font-size: 0.75rem;
             }
         }
     </style>
@@ -352,14 +421,14 @@
         <div class="love-quote">仿若流风之回雪。</div>
     </div>
 
-    <script src="../../js/timer.js"></script>
+    <script src="../../js/timer.js?v=20260814-mobile"></script>
     <!-- 万国爱语爱心边框：d3 必须在 love.js 之前 -->
     <script src="../../js/d3.min.js"></script>
-    <script src="../../js/love.js"></script>
+    <script src="../../js/love.js?v=20260814-mobile"></script>
     <!-- 爱心流星鼠标轨迹拖尾 -->
-    <script src="../../js/heart-trail.js"></script>
+    <script src="../../js/heart-trail.js?v=20260814-mobile"></script>
     <!-- 统一背景音乐播放器（随机播放，跨页面延续） -->
-    <script src="../../js/music-player.js"></script>
+    <script src="../../js/music-player.js?v=20260814-mobile"></script>
     <script>
         // 计时器（逻辑统一在 js/timer.js，此处只配置起始时间）
         LoveTimer.init({ startDate: '2022-11-20T19:00:00', mode: 'digital' });
@@ -388,12 +457,15 @@
             setTimeout(createFallingChar, i * 200);
         }
 
-        // 持续生成
-        setInterval(createFallingChar, 500);
+        // 持续生成（移动端降低频率，保持轻盈不卡顿）
+        const isMobileChar = window.innerWidth <= 480;
+        const charInterval = isMobileChar ? 900 : 500;
+        setInterval(createFallingChar, charInterval);
 
-        // 限制数量
+        // 限制数量（移动端更少）
+        const maxChars = isMobileChar ? 30 : 50;
         setInterval(() => {
-            if (fallingChars.children.length > 50) {
+            if (fallingChars.children.length > maxChars) {
                 fallingChars.removeChild(fallingChars.firstChild);
             }
         }, 1000);

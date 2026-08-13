@@ -69,9 +69,11 @@
   function init () {
     flowers = []
     var hearts = getHearts()
+    // 移动端花朵数量减半：双心形花朵密集，小屏上视觉无差但更流畅
+    var mobileScale = (W <= 480) ? 0.5 : 1
     var shapes = [
-      { h: hearts.big, count: COUNT_BIG, delay: 0 },        // 大心形先长
-      { h: hearts.small, count: COUNT_SMALL, delay: 0.8 }   // 小心形稍后
+      { h: hearts.big, count: Math.round(COUNT_BIG * mobileScale), delay: 0 },        // 大心形先长
+      { h: hearts.small, count: Math.round(COUNT_SMALL * mobileScale), delay: 0.8 }   // 小心形稍后
     ]
 
     for (var s = 0; s < shapes.length; s++) {
@@ -256,7 +258,9 @@
     }
     W = rect.width
     H = rect.height
-    DPR = Math.min(window.devicePixelRatio || 1, 2)
+    // 移动端 DPR 上限 1.5：双 canvas 页面（garden + heartCanvas）更流畅
+    var cap = W <= 480 ? 1.5 : 2
+    DPR = Math.min(window.devicePixelRatio || 1, cap)
     canvas.width = Math.round(W * DPR)
     canvas.height = Math.round(H * DPR)
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0)
@@ -264,7 +268,12 @@
   }
 
   resize()
-  window.addEventListener('resize', resize)
+  var _resizeTimer = null
+  window.addEventListener('resize', function () {
+    // 防抖：移动端旋转/地址栏伸缩时不频繁重建花朵
+    clearTimeout(_resizeTimer)
+    _resizeTimer = setTimeout(resize, 200)
+  })
   ensureLoop()
   }
 

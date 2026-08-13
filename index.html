@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>甄玥，我爱你</title>
     <style>
         * {
@@ -16,6 +16,13 @@
             min-height: 100vh;
             overflow-x: hidden;
             font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            overscroll-behavior: none;
+        }
+
+        html {
+            touch-action: manipulation;
         }
 
         body {
@@ -318,12 +325,74 @@
             .card-icon {
                 font-size: 2rem;
             }
+
+            /* 音乐按钮：避开刘海安全区，且触摸目标≥44px */
+            .music-control {
+                top: calc(15px + env(safe-area-inset-top));
+                right: calc(15px + env(safe-area-inset-right));
+                padding: 8px 15px;
+                font-size: 0.8rem;
+                min-height: 44px;
+            }
+
+            .music-text {
+                display: none;
+            }
         }
 
         /* 平板适配 */
         @media (min-width: 481px) and (max-width: 768px) {
             .nav-cards {
                 grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* ===== 手机横屏适配（高度 < 500px 且宽度 > 高度） ===== */
+        @media (orientation: landscape) and (max-height: 500px) {
+            body {
+                padding-top: 55px;
+            }
+
+            .main-title {
+                font-size: clamp(1.6rem, 4vw, 2.2rem);
+                letter-spacing: 4px;
+                margin-bottom: 8px;
+            }
+
+            .title-section {
+                margin-bottom: 15px;
+            }
+
+            .timer-section {
+                padding: 15px;
+                margin-bottom: 20px;
+            }
+
+            .nav-cards {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
+                max-width: 760px;
+            }
+
+            .nav-card {
+                padding: 15px 12px;
+            }
+
+            .card-icon {
+                font-size: 1.8rem;
+                margin-bottom: 8px;
+            }
+
+            .footer-signature {
+                margin-top: 20px;
+            }
+
+            .music-control {
+                top: calc(10px + env(safe-area-inset-top));
+                right: calc(10px + env(safe-area-inset-right));
+                min-height: 36px;
+                padding: 6px 12px;
+                font-size: 0.75rem;
             }
         }
     </style>
@@ -385,11 +454,11 @@
         <div class="footer-signature">— 明 爱 玥 —</div>
     </div>
 
-    <script src="js/timer.js"></script>
+    <script src="js/timer.js?v=20260814-mobile"></script>
     <!-- 爱心流星鼠标轨迹拖尾 -->
-    <script src="js/heart-trail.js"></script>
+    <script src="js/heart-trail.js?v=20260814-mobile"></script>
     <!-- 统一背景音乐播放器（随机播放，跨页面延续） -->
-    <script src="js/music-player.js"></script>
+    <script src="js/music-player.js?v=20260814-mobile"></script>
     <script>
         // 恋爱计时器（逻辑统一在 js/timer.js，此处只配置起始时间）
         LoveTimer.init({ startDate: '2022-11-20T19:00:00', mode: 'digital' });
@@ -419,12 +488,14 @@
             setTimeout(createFloatingHeart, i * 300);
         }
 
-        // 持续生成爱心
-        setInterval(createFloatingHeart, 800);
+        // 持续生成爱心（移动端降低频率，避免小屏上动画过多卡顿）
+        const mobileHeart = window.innerWidth <= 480;
+        setInterval(createFloatingHeart, mobileHeart ? 1400 : 800);
 
         // 限制最大爱心数量
+        const maxHearts = mobileHeart ? 25 : 40;
         setInterval(() => {
-            if (heartsBg.children.length > 40) {
+            if (heartsBg.children.length > maxHearts) {
                 heartsBg.removeChild(heartsBg.firstChild);
             }
         }, 2000);

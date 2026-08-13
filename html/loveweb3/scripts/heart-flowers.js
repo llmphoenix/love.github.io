@@ -42,7 +42,9 @@
     }
     W = rect.width
     H = rect.height
-    DPR = Math.min(window.devicePixelRatio || 1, 2)
+    // 移动端 DPR 上限 1.5：清晰度与性能平衡（桌面仍 2）
+    var cap = W <= 480 ? 1.5 : 2
+    DPR = Math.min(window.devicePixelRatio || 1, cap)
     canvas.width = Math.round(W * DPR)
     canvas.height = Math.round(H * DPR)
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0)
@@ -52,7 +54,11 @@
   function init () {
     flowers = []
     var scale = Math.min(W, H) / (BASE_HALF * 2 + 4) // 心形宽 32 单位 + 外边距
-    var count = Math.max(90, Math.round(COUNT * (W / 300)))
+    // 移动端数量减半：花朵小且密，小屏上视觉无差但明显更流畅
+    var isMobile = W <= 480
+    var count = isMobile
+      ? Math.max(80, Math.round(COUNT * (W / 300) * 0.5))
+      : Math.max(90, Math.round(COUNT * (W / 300)))
     for (var i = 0; i < count; i++) {
       flowers.push({
         t0: (i / count) * Math.PI * 2,            // 沿心形均匀分布的起始角度
@@ -181,6 +187,11 @@
   }
 
   resize()
-  window.addEventListener('resize', resize)
+  var _resizeTimer = null
+  window.addEventListener('resize', function () {
+    // 防抖：移动端旋转/地址栏伸缩时不频繁重建花朵
+    clearTimeout(_resizeTimer)
+    _resizeTimer = setTimeout(resize, 200)
+  })
   window.requestAnimationFrame(start)
 })()

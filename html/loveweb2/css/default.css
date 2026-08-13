@@ -4,11 +4,20 @@
     box-sizing: border-box;
 }
 
+html {
+    /* 移动端消除点击延迟 */
+    touch-action: manipulation;
+}
+
 body {
     background: linear-gradient(135deg, #fff0f5 0%, #ffe4ec 50%, #ffd6e0 100%);
     font-family: 'PingFang SC', 'Microsoft YaHei', 'Consolas', 'Monaco', monospace;
     min-height: 100vh;
     overflow-x: hidden;
+    /* 移动端：禁止长按选择/点击高亮 */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    overscroll-behavior: none;
 }
 
 /* 返回按钮 */
@@ -361,6 +370,11 @@ body[data-theme="t5"] {
         left: 15px;
         padding: 8px 15px;
         font-size: 0.8rem;
+        top: calc(15px + env(safe-area-inset-top));
+        left: calc(15px + env(safe-area-inset-left));
+        min-height: 44px;
+        display: flex;
+        align-items: center;
     }
 
     .music-control {
@@ -368,6 +382,9 @@ body[data-theme="t5"] {
         right: 15px;
         padding: 8px 15px;
         font-size: 0.8rem;
+        top: calc(15px + env(safe-area-inset-top));
+        right: calc(15px + env(safe-area-inset-right));
+        min-height: 44px;
     }
 
     #messages {
@@ -392,5 +409,59 @@ body[data-theme="t5"] {
     #code {
         font-size: 10px;
         padding: 15px;
+    }
+}
+
+/* ===== 手机横屏适配（高度 < 500px 且宽度 > 高度） ===== */
+/* 横屏时视口矮：恢复左右布局（覆盖 ≤768 的上下排列），并压缩尺寸避免溢出 */
+@media (orientation: landscape) and (max-height: 500px) {
+    html, body {
+        overflow-y: auto;
+    }
+
+    #mainDiv {
+        padding: 15px;
+        padding-top: 60px;
+        align-items: center;
+    }
+
+    #content {
+        flex-direction: row;
+        gap: 20px;
+        width: auto;
+        max-width: 100%;
+    }
+
+    #loveHeart {
+        width: min(52vh, 360px);
+        height: min(52vh, 360px);
+        order: 0;
+        flex-shrink: 1;
+    }
+
+    #code {
+        width: min(42vw, 340px);
+        max-width: 42vw;
+        order: 1;
+        font-size: 11px;
+        padding: 15px;
+        flex-shrink: 1;
+        align-self: center;
+    }
+
+    .back-btn {
+        top: calc(10px + env(safe-area-inset-top));
+        left: calc(10px + env(safe-area-inset-left));
+        min-height: 36px;
+        padding: 6px 12px;
+        font-size: 0.75rem;
+    }
+
+    .music-control {
+        top: calc(10px + env(safe-area-inset-top));
+        right: calc(10px + env(safe-area-inset-right));
+        min-height: 36px;
+        padding: 6px 12px;
+        font-size: 0.75rem;
     }
 }

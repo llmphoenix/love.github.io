@@ -50,6 +50,8 @@
         var dpr = Math.min(window.devicePixelRatio || 1, 2);
         W = window.innerWidth;
         H = window.innerHeight;
+        // 移动端 DPR 上限 1.5：触摸拖尾更流畅
+        if (W <= 480) dpr = Math.min(dpr, 1.5);
         canvas.width = W * dpr;
         canvas.height = H * dpr;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -88,7 +90,9 @@
 
     // 爱心粒子（流星主体）
     function createHeart(x, y, vx, vy) {
-        var size = random(8, 18);
+        // 移动端尺寸稍小、更省性能
+        var isMobile = W <= 480;
+        var size = isMobile ? random(7, 15) : random(8, 18);
         return {
             x: x,
             y: y,
@@ -116,8 +120,8 @@
         // 流星主体
         var h = createHeart(x, y, vx, vy);
         hearts.push(h);
-        // 拖尾粒子
-        var n = Math.floor(random(5, 10));
+        // 拖尾粒子（移动端少一半，保持轻盈）
+        var n = (W <= 480) ? Math.floor(random(4, 7)) : Math.floor(random(5, 10));
         for (var i = 0; i < n; i++) {
             h.tails.push(createTail(
                 x - vx * random(0.5, 3),
@@ -140,7 +144,10 @@
 
         // 每帧沿轨迹生成流星（仅最近有移动时）
         if (hasMouse && now - lastMoveTime < 300) {
-            var rate = Math.max(40, 110 - past.length * 3);
+            // 移动端降低生成频率（触摸拖动时也流畅）
+            var rate = (W <= 480)
+                ? Math.max(70, 150 - past.length * 4)
+                : Math.max(40, 110 - past.length * 3);
             if (now - lastSpawn > rate) {
                 lastSpawn = now;
                 if (past.length >= 2) {
@@ -211,16 +218,17 @@
             ctx.save();
             ctx.translate(hh.x, hh.y);
             ctx.rotate(hh.rotation);
-            // 发光
+            // 发光（移动端降低模糊，减少 GPU 负担但保留光感）
+            var blur = (W <= 480) ? 10 : 18;
             ctx.globalAlpha = 0.35 * scale;
             ctx.fillStyle = 'hsla(' + hh.hue + ', ' + hh.sat + '%, ' + (hh.light + 8) + '%, 1)';
             ctx.shadowColor = 'hsla(' + hh.hue + ', 100%, 70%, 0.9)';
-            ctx.shadowBlur = 18;
+            ctx.shadowBlur = blur;
             drawHeartPath(0, 0, size);
             ctx.fill();
             // 主体
             ctx.globalAlpha = 0.95 * scale;
-            ctx.shadowBlur = 8;
+            ctx.shadowBlur = Math.round(blur / 2);
             var grad = ctx.createLinearGradient(0, -size / 2, 0, size / 2);
             grad.addColorStop(0, 'hsl(' + hh.hue + ', ' + hh.sat + '%, ' + hh.light + '%)');
             grad.addColorStop(1, 'hsl(' + (hh.hue - 12) + ', ' + hh.sat + '%, ' + (hh.light - 12) + '%)');
@@ -275,9 +283,12 @@
     }
 
     function onTouch(e) {
-        if (e.touches.length > 0) {
-            var x = e.touches[0].clientX;
-            var y = e.touches[0].clientY;
+        // 兼容真实 TouchEvent 与部分浏览器合成的普通事件
+        var touch = (e.touches && e.touches.length > 0) ? e.touches[0] :
+                    (e.changedTouches && e.changedTouches.length > 0) ? e.changedTouches[0] : null;
+        if (touch) {
+            var x = touch.clientX;
+            var y = touch.clientY;
             mouseX = x;
             mouseY = y;
             hasMouse = true;

@@ -19,17 +19,23 @@
     PARTICLE_NUM = 2000,
     textSize = 70
 
+  let textWidth = 0
+
   function setCanvasSize() {
     var screenWidth = window.innerWidth;
+    // 移动端优先：CSS 会再按 92vw 缩放，逻辑尺寸保持清晰即可
     CANVASWIDTH = Math.min(Math.max(screenWidth * 0.9, 300), 1000);
     CANVASHEIGHT = Math.min(CANVASWIDTH * 0.18, 150);
-    PARTICLE_NUM = Math.floor(CANVASWIDTH * CANVASHEIGHT / 75);
+    // 移动端（小屏）适当降低粒子密度，保证流畅
+    var density = screenWidth <= 480 ? 90 : 75;
+    PARTICLE_NUM = Math.floor(CANVASWIDTH * CANVASHEIGHT / density);
     textSize = Math.floor(CANVASHEIGHT * 0.55);
 
     if (canvas) {
       canvas.width = CANVASWIDTH;
       canvas.height = CANVASHEIGHT;
     }
+    textWidth = 0 // 强制重算文字宽度
   }
 
   function draw () {
@@ -38,7 +44,11 @@
     ctx.textBaseline = 'middle'
     ctx.fontWeight = 'bold'
     ctx.font = textSize + 'px \'SimHei\', \'Avenir\', \'Helvetica Neue\', \'Arial\', \'sans-serif\''
-    ctx.fillText(text, (CANVASWIDTH - ctx.measureText(text).width) * 0.5, CANVASHEIGHT * 0.5)
+    // 文字宽度缓存：文本不变时避免每帧 measureText（移动端省电）
+    if (textWidth === 0) {
+      textWidth = ctx.measureText(text).width
+    }
+    ctx.fillText(text, (CANVASWIDTH - textWidth) * 0.5, CANVASHEIGHT * 0.5)
 
     let imgData = ctx.getImageData(0, 0, CANVASWIDTH, CANVASHEIGHT)
 
@@ -126,28 +136,42 @@
   }
 
   function event () {
-    document.addEventListener('click', function (e) {
-      // 排除按钮点击
-      if (e.target.closest('.back-btn') || e.target.closest('.music-control')) {
-        return
-      }
+    // 统一用 pointerup 处理点击切换文字（桌面鼠标 + 移动触摸只触发一次）
+    // 兼容不支持 PointerEvent 的老设备：回退到 click/touchstart 二选一
+    var lastSwitch = 0
+    function isButtonTarget(e) {
+      var t = e.target
+      if (!t || !t.closest) return false
+      return t.closest('.back-btn') || t.closest('.music-control') || t.closest('#heartCanvas')
+    }
+    function switchText() {
+      var now = Date.now()
+      // 防抖：同一瞬间的 click+touchstart 视为一次
+      if (now - lastSwitch < 400) return
+      lastSwitch = now
       textIndex++
       if (textIndex >= texts.length) {
         textIndex = 0
       }
       text = texts[textIndex]
-    }, false)
+      textWidth = 0 // 文字改变 → 重算宽度
+    }
 
-    document.addEventListener('touchstart', function (e) {
-      if (e.target.closest('.back-btn') || e.target.closest('.music-control')) {
-        return
-      }
-      textIndex++
-      if (textIndex >= texts.length) {
-        textIndex = 0
-      }
-      text = texts[textIndex]
-    }, false)
+    if (window.PointerEvent) {
+      document.addEventListener('pointerup', function (e) {
+        if (isButtonTarget(e)) return
+        switchText()
+      }, false)
+    } else {
+      document.addEventListener('touchend', function (e) {
+        if (isButtonTarget(e)) return
+        switchText()
+      }, false)
+      document.addEventListener('click', function (e) {
+        if (isButtonTarget(e)) return
+        switchText()
+      }, false)
+    }
 
     // 窗口大小变化时重新调整
     var resizeTimer
@@ -169,7 +193,7 @@
     if (canvas === null || !canvas.getContext) {
       return
     }
-    ctx = canvas.getContext('2d')
+    ctx = canvas.getContext('2d', { willReadFrequently: true })
     setDimensions()
     event()
 

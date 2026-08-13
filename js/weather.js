@@ -139,10 +139,12 @@
     var area = (state.w * state.h) / 1e6
     var base = state.type === 'rain' ? RAIN_LEVELS[state.level] : SNOW_LEVELS[state.level]
     var total = Math.round(area * base.count)
+    // 移动端（小屏）自动降级：粒子上限减半，保证触摸交互流畅
+    var mobileScale = state.w <= 480 ? 0.5 : 1
     if (state.type === 'rain') {
-      total = Math.max(30, Math.min(2200, total))
+      total = Math.max(30, Math.min(2200 * mobileScale, total * mobileScale))
     } else {
-      total = Math.max(18, Math.min(1400, total))
+      total = Math.max(18, Math.min(1400 * mobileScale, total * mobileScale))
     }
     state.particles = []
     for (var i = 0; i < total; i++) {
@@ -171,7 +173,9 @@
 
   function resizeCanvas () {
     measure()
-    state.dpr = Math.min(window.devicePixelRatio || 1, 2)
+    // 移动端 DPR 上限 1.5：天气粒子是低频透明元素，1.5 足够清晰且更流畅
+    var cap = state.w <= 480 ? 1.5 : 2
+    state.dpr = Math.min(window.devicePixelRatio || 1, cap)
     var c = state.canvas
     c.width = Math.round(state.w * state.dpr)
     c.height = Math.round(state.h * state.dpr)
@@ -181,9 +185,12 @@
     rebuildParticles()
   }
 
+  var _resizeTimer = null
   function onResize () {
     if (!state.running) return
-    resizeCanvas()
+    // 防抖：移动端旋转/地址栏伸缩时不频繁重建粒子
+    clearTimeout(_resizeTimer)
+    _resizeTimer = setTimeout(resizeCanvas, 200)
   }
 
   // ---------- 闪电（强度随当前雨档的 thunder 系数缩放：雨越大雷越大） ----------

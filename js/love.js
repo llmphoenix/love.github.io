@@ -13,10 +13,17 @@ const words = [
     'Mahal', 'ярату', 'محبت', 'sopp', 'uthando', 
     'ความรัก', 'Aşk', 'Tình yêu', 'ליבע'];
 
+// 移动端减少爱心边框词语数量：65 个全屏动画 span 在手机上开销较大，
+// 取子集仍能保持心形轮廓完整（每 2 个取 1 个 → 视觉无差但更流畅）
+var useWords = words;
+if (window.innerWidth <= 480 && words.length > 30) {
+    useWords = words.filter(function (_, i) { return i % 2 === 0; });
+}
+
 d3.select('.love')
-    .style('--particles', words.length)
+    .style('--particles', useWords.length)
     .selectAll('span')
-    .data(words)
+    .data(useWords)
     .enter()
     .append('span')
     .style('--n', (d, i) => i + 1)

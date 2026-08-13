@@ -2,20 +2,20 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>代码情书 - 明爱玥</title>
-    <link href="css/default.css" type="text/css" rel="stylesheet">
+    <link href="css/default.css?v=20260814-land" type="text/css" rel="stylesheet">
     <script type="text/javascript" src="js/jquery.js"></script>
-    <script type="text/javascript" src="js/garden.js"></script>
-    <script type="text/javascript" src="js/heart-flowers.js"></script>
-    <script type="text/javascript" src="js/functions.js"></script>
-    <script type="text/javascript" src="../../js/timer.js"></script>
+    <script type="text/javascript" src="js/garden.js?v=20260814-mobile"></script>
+    <script type="text/javascript" src="js/heart-flowers.js?v=20260814-mobile"></script>
+    <script type="text/javascript" src="js/functions.js?v=20260814-mobile"></script>
+    <script type="text/javascript" src="../../js/timer.js?v=20260814-mobile"></script>
     <!-- 爱心流星鼠标轨迹拖尾 -->
-    <script type="text/javascript" src="../../js/heart-trail.js"></script>
+    <script type="text/javascript" src="../../js/heart-trail.js?v=20260814-mobile"></script>
     <!-- 通用天气效果库（雨天/雪天，随机启用） -->
-    <script type="text/javascript" src="../../js/weather.js"></script>
+    <script type="text/javascript" src="../../js/weather.js?v=20260814-mobile"></script>
     <!-- 统一背景音乐播放器（随机播放，跨页面延续） -->
-    <script type="text/javascript" src="../../js/music-player.js"></script>
+    <script type="text/javascript" src="../../js/music-player.js?v=20260814-mobile"></script>
 </head>
 
 <body>
@@ -114,12 +114,18 @@
             Weather.random();
 
             // 鼠标点击或触屏点击：重新随机强度（排除音乐按钮 / 返回按钮区域）
+            // 统一用 pointerup 处理，避免 click + touchstart 双触发（一次点击跳 2 级）
             function isControlClick(target) {
                 return !!(target && typeof target.closest === 'function' &&
                     (target.closest('.back-btn') || target.closest('.music-control')));
             }
 
+            var lastReroll = 0;
             function rerollWeather() {
+                var now = Date.now();
+                // 防抖：同一瞬间的 click+touchstart 视为一次
+                if (now - lastReroll < 400) return;
+                lastReroll = now;
                 if (window.Weather) {
                     if (Weather.isActive()) {
                         // 保持当前雨/雪类型，仅随机新强度
@@ -130,12 +136,18 @@
                 }
             }
 
-            document.addEventListener('click', function (e) {
-                if (!isControlClick(e.target)) rerollWeather();
-            }, false);
-            document.addEventListener('touchstart', function (e) {
-                if (!isControlClick(e.target)) rerollWeather();
-            }, false);
+            if (window.PointerEvent) {
+                document.addEventListener('pointerup', function (e) {
+                    if (!isControlClick(e.target)) rerollWeather();
+                }, false);
+            } else {
+                document.addEventListener('click', function (e) {
+                    if (!isControlClick(e.target)) rerollWeather();
+                }, false);
+                document.addEventListener('touchstart', function (e) {
+                    if (!isControlClick(e.target)) rerollWeather();
+                }, false);
+            }
         }
     </script>
 </body>

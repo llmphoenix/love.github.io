@@ -653,7 +653,22 @@ function getGirlOffscreen() {
 }
 
 windowResizeHandler();
-window.addEventListener('resize', windowResizeHandler, false);
+var _resizeTimer = null;
+window.addEventListener('resize', function () {
+  // 防抖：移动端旋转/地址栏伸缩时不频繁重建
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(function () {
+    windowResizeHandler();
+    // 星星数量随尺寸变化时重建
+    if (stars.length !== starCount) {
+      stars = [];
+      for (var i = 0; i < starCount; i++) {
+        stars[i] = new Star();
+        stars[i].reset();
+      }
+    }
+  }, 200);
+}, false);
 
 createUniverse();
 
@@ -670,6 +685,7 @@ function createUniverse() {
 
 var _lastTs = 0;
 
+// 星空/流星/地面/树/情侣等每帧逻辑（移动端减量优化版）
 function draw(ts) {
   ts = ts || performance.now();
   var dt = _lastTs ? Math.min((ts - _lastTs) / 1000, 0.05) : 0.016;
@@ -841,10 +857,16 @@ function getRandInterval(min, max) {
   return (Math.random() * (max - min) + min);
 }
 
+// 像素比缩放：移动端 DPR 上限 2（清晰度与性能平衡）
+var dpr = 1;
+
 function windowResizeHandler() {
   width = window.innerWidth;
   height = window.innerHeight;
-  starCount = width * starDensity;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  // 移动端星星密度微降（视觉无感，性能更稳）
+  var densityMul = width <= 480 ? 0.8 : 1;
+  starCount = Math.round(width * starDensity * densityMul);
   // console.log(starCount)
   circleRadius = (width > height ? height / 2 : width / 2);
   circleCenter = {
@@ -852,6 +874,7 @@ function windowResizeHandler() {
     y: height / 2
   }
 
-  canva.setAttribute('width', width);
-  canva.setAttribute('height', height);
+  canva.width = Math.round(width * dpr);
+  canva.height = Math.round(height * dpr);
+  if (universe) universe.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
