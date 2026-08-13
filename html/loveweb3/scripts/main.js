@@ -3,13 +3,10 @@
   window.webkitRequestAnimationFrame || window.msRequestAnimationFrame
 
   const FRAME_RATE = 60
-  const PARTICLE_NUM = 2000
   const RADIUS = Math.PI * 2
-  const CANVASWIDTH = 1000
-  const CANVASHEIGHT = 150
   const CANVASID = 'canvas'
 
-  let texts = ['甄玥', 'I Love You', '愿你与我相伴', '幸福快乐，儿孙满堂', '矢志不渝，坚不可摧', '君为我', '我自当为你']
+  let texts = ['甄玥', 'I Love You', '愿你与我相伴', '幸福快乐', '儿孙满堂', '君为我', '我自当为你', '执子之手，矢志不渝']
 
   let canvas,
     ctx,
@@ -17,7 +14,23 @@
     quiver = true,
     text = texts[0],
     textIndex = 0,
+    CANVASWIDTH = 1000,
+    CANVASHEIGHT = 150,
+    PARTICLE_NUM = 2000,
     textSize = 70
+
+  function setCanvasSize() {
+    var screenWidth = window.innerWidth;
+    CANVASWIDTH = Math.min(Math.max(screenWidth * 0.9, 300), 1000);
+    CANVASHEIGHT = Math.min(CANVASWIDTH * 0.18, 150);
+    PARTICLE_NUM = Math.floor(CANVASWIDTH * CANVASHEIGHT / 75);
+    textSize = Math.floor(CANVASHEIGHT * 0.55);
+
+    if (canvas) {
+      canvas.width = CANVASWIDTH;
+      canvas.height = CANVASHEIGHT;
+    }
+  }
 
   function draw () {
     ctx.clearRect(0, 0, CANVASWIDTH, CANVASHEIGHT)
@@ -41,10 +54,10 @@
   }
 
   function particleText (imgData) {
-    // 点坐标获取
     var pxls = []
-    for (var w = CANVASWIDTH; w > 0; w -= 3) {
-      for (var h = 0; h < CANVASHEIGHT; h += 3) {
+    var step = Math.max(2, Math.floor(CANVASWIDTH / 300))
+    for (var w = CANVASWIDTH; w > 0; w -= step) {
+      for (var h = 0; h < CANVASHEIGHT; h += step) {
         var index = (w + h * (CANVASWIDTH)) * 4
         if (imgData.data[index] > 1) {
           pxls.push([w, h])
@@ -105,34 +118,50 @@
   }
 
   function setDimensions () {
-    canvas.width = CANVASWIDTH
-    canvas.height = CANVASHEIGHT
+    setCanvasSize()
     canvas.style.position = 'absolute'
-    canvas.style.left = '0%'
-    canvas.style.top = '30%'
-    canvas.style.bottom = '30%'
-    canvas.style.right = '0%'
-    canvas.style.marginTop = window.innerHeight * .15 + 'px'
+    canvas.style.left = '50%'
+    canvas.style.top = '50%'
+    canvas.style.transform = 'translate(-50%, -50%)'
   }
 
   function event () {
     document.addEventListener('click', function (e) {
+      // 排除按钮点击
+      if (e.target.closest('.back-btn') || e.target.closest('.music-control')) {
+        return
+      }
       textIndex++
       if (textIndex >= texts.length) {
         textIndex = 0
       }
       text = texts[textIndex]
-      console.log(textIndex)
     }, false)
 
     document.addEventListener('touchstart', function (e) {
+      if (e.target.closest('.back-btn') || e.target.closest('.music-control')) {
+        return
+      }
       textIndex++
       if (textIndex >= texts.length) {
         textIndex = 0
       }
       text = texts[textIndex]
-      console.log(textIndex)
     }, false)
+
+    // 窗口大小变化时重新调整
+    var resizeTimer
+    window.addEventListener('resize', function () {
+      clearTimeout(resizeTimer)
+      resizeTimer = setTimeout(function () {
+        setCanvasSize()
+        // 重新初始化粒子
+        particles = []
+        for (var i = 0; i < PARTICLE_NUM; i++) {
+          particles[i] = new Particle(canvas)
+        }
+      }, 300)
+    })
   }
 
   function init () {
@@ -155,23 +184,15 @@
     constructor (canvas) {
       let spread = canvas.height
       let size = Math.random() * 1.2
-      // 速度
       this.delta = 0.06
-      // 现在的位置
       this.x = 0
       this.y = 0
-      // 上次的位置
       this.px = Math.random() * canvas.width
       this.py = (canvas.height * 0.5) + ((Math.random() - 0.5) * spread)
-      // 记录点最初的位置
       this.mx = this.px
       this.my = this.py
-      // 点的大小
       this.size = size
-      // this.origSize = size
-      // 是否用来显示字
       this.inText = false
-      // 透明度相关
       this.opacity = 0
       this.fadeInRate = 0.005
       this.fadeOutRate = 0.03
@@ -206,14 +227,6 @@
       ctx.fill()
     }
   }
-  
-  var isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
-    if(!isChrome){
-      $('#iframeAudio').remove()
-  }
-  
-  // setTimeout(() => {
-    init()  
-  // }, 4000);
-  // mp3.play()
+
+  init()
 })(window)

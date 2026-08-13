@@ -1,24 +1,34 @@
 <!DOCTYPE HTML>
-<html>
+<html lang="zh-CN">
 <head>
-	<title>玥爱明</title>
-	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-	<style type="text/css">
-		@font-face {
-			font-family: digit;
-			src: url('digital.ttf') format("truetype");
-		}
-	</style>
-	<link href="css/default.css" type="text/css" rel="stylesheet">
-	<script type="text/javascript" src="js/jquery.js"></script>
-	<script type="text/javascript" src="js/garden.js"></script>
-	<script type="text/javascript" src="js/functions.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>代码情书 - 明爱玥</title>
+    <link href="css/default.css" type="text/css" rel="stylesheet">
+    <script type="text/javascript" src="js/jquery.js"></script>
+    <script type="text/javascript" src="js/garden.js"></script>
+    <script type="text/javascript" src="js/functions.js"></script>
 </head>
 
 <body>
-<div id="mainDiv">
-	<div id="content">
+    <a href="../../index.html" class="back-btn">← 返回</a>
+
+    <div id="mainDiv">
+        <div id="content">
+            <div id="loveHeart">
+                <canvas id="garden"></canvas>
+                <div id="words">
+                    <div id="messages">
+                        甄玥，爱你，Forever
+                        <div id="elapseClock"></div>
+                    </div>
+                    <div id="loveu">
+                        You Jump， I Jump.<br/>
+                        <div class="signature">—— 明爱玥</div>
+                    </div>
+                </div>
+            </div>
+
 		<div id="code">
 			<span class="comments">人生白驹过隙，个中滋味，如人饮水，冷暖自知。</span><br/>
 			<span class="comments">无非是笑笑别人，然后被别人笑笑而已，是非对错，皆过眼云烟。</span><br/>
@@ -47,48 +57,33 @@
 			<span class="keyword">唯爱门前双柳树，枝枝叶叶不相离</span><br/>
 			<span class="keyword">只愿君心似我心，定不负相思意</span><br/>
 		</div>
-		<div id="loveHeart">
-			<canvas id="garden"></canvas>
-			<div id="words">
-				<div id="messages">
-					甄玥，爱你，Forever
-					<div id="elapseClock"></div>
-				</div>
-				<div id="loveu">
-					You Jump， I Jump.<br/>
-					<div class="signature">明爱玥</div>
-				</div>
-			</div>
-		</div>
-	</div>
-</div>
-<script type="text/javascript">
-	var offsetX = $("#loveHeart").width() / 2;
-	var offsetY = $("#loveHeart").height() / 2 - 55;
+        </div>
+    </div>
 
-	var together = "2022-11-20";
-	if (!document.createElement('canvas').getContext) {
-		var msg = document.createElement("div");
-		msg.id = "errorMsg";
-		msg.innerHTML = "Your browser doesn't support HTML5!<br/>Recommend use Chrome 14+/IE 9+/Firefox 7+/Safari 4+";
-		document.body.appendChild(msg);
-		$("#code").css("display", "none")
-		$("#copyright").css("position", "absolute");
-		$("#copyright").css("bottom", "10px");
-		document.execCommand("stop");
-	} else {
-		setTimeout(function () {
-			startHeartAnimation();
-		}, 5000);
+    <script type="text/javascript">
+        var together = "2022-11-20";
 
-		timeElapse(together);
-		setInterval(function () {
-			timeElapse(together);
-		}, 500);
+        if (!document.createElement('canvas').getContext) {
+            var msg = document.createElement("div");
+            msg.id = "errorMsg";
+            msg.innerHTML = "您的浏览器不支持HTML5<br/>建议使用 Chrome / Firefox / Safari 最新版本";
+            document.body.appendChild(msg);
+            $("#code").css("display", "none");
+        } else {
+            $(document).ready(function() {
+                setTimeout(function () {
+                    startHeartAnimation();
+                }, 3000);
 
-		adjustCodePosition();
-		$("#code").typewriter();
-	}
-</script>
+                timeElapse(together);
+                setInterval(function () {
+                    timeElapse(together);
+                }, 500);
+
+				adjustCodePosition();
+                $("#code").typewriter();
+            });
+        }
+    </script>
 </body>
 </html>

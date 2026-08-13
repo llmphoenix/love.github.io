@@ -1,225 +1,404 @@
-<html>
-	<head>
-		<title>甄玥，我爱你</title>
-		<meta http-equiv="content-type" content="text/html; charset=UTF-8">	
-		<!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
-		<!-- <title>横屏显示</title>
-		<style>
-			@media screen and (orientation:portrait) {
-				body {
-					transform: rotate(90deg);
-					transform-origin: left top;
-					width: 100vh;
-					height: 100vw;
-					overflow-x: hidden;
-					position: absolute;
-					top: 100%;
-					left: 0;
-				}
-			}
-		</style> -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>甄玥，我爱你</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-		<style type="text/css">
-			body {
-				display: flex;
-				align-items: center;
-				justify-content: center;
-				height: 100vh;
-				margin: 0;
-				overflow: hidden;
-				 background-color: #FCE8F8;
-			}
-	
-			#snow-container {
-				position: fixed;
-				top: 0;
-				left: 0;
-				width: 100%;
-				height: 100%;
-				pointer-events: none;
-				z-index: -1;
-			}
-	
-			.snowflake {
-				position: absolute;
-				width: 10px;
-				height: 10px;
-				background-color: #fff;
-				border-radius: 50%;
-				opacity: 0.8;
-				pointer-events: none;
-				animation: snowfall linear infinite;
-			}
-	
-			@keyframes snowfall {
-				0% {
-					transform: translateY(-100%);
-				}
-				100% {
-					transform: translateY(100vh);
-				}
-			}
-	
-			.heart {
-				width: 200px;
-				height: 200px;
-				position: relative;
-				animation: heartbeat 1s infinite;
-				transform-origin: center center;
-			}
-	
-			.heart:before,
-			.heart:after {
-				content: "";
-				background-color: red;
-				border-radius: 50px 50px 0 0;
-				position: absolute;
-				top: 0;
-			}
-	
-			.heart:before {
-				left: 100px;
-				width: 100px;
-				height: 160px;
-				transform: rotate(-45deg);
-				transform-origin: 0 100%;
-			}
-	
-			.heart:after {
-				left: 0;
-				width: 100px;
-				height: 160px;
-				transform: rotate(45deg);
-				transform-origin: 100% 100%;
-			}
-	
-			#timeElapsed {
-				text-align: center;
-				font-size: 24px;
-				margin-top: 20px;
-			}
-	
-			@keyframes heartbeat {
-				0% {
-					transform: scale(1);
-				}
-				50% {
-					transform: scale(1.2);
-				}
-				100% {
-					transform: scale(1);
-				}
-			}
-	
-			@keyframes falling {
-				0% {
-					transform: translateY(-100vh);
-				}
-				100% {
-					transform: translateY(100vh);
-				}
-			}
-	
-			.sakura {
-				position: absolute;
-				top: -20px;
-				left: -20px;
-				width: 40px;
-				height: 40px;
-				background-image: url('https://www.unicode.org/emoji/charts/full-emoji-list.html#1f338'); /* 🌸的Unicode转义序列 */
-				background-size: cover;
-				animation: falling linear infinite;
-				animation-duration: 10s;
-			}
-		</style>
-	</head>	
-	<body>
-	<div id="snow-container"></div>
-	<div class="container">
-	<script type="text/javascript" src="js/phoenixlib.js"></script>		
-	<link href="css/phoenixlib.css" rel="stylesheet" type="text/css" />
-	<style type="text/css">
-			@import"css/phoenixlib.css";
-	</style>
-	<div class="heart" style="position:absolute; left:300px; top:400px; width:auto; height:auto;"></div>
-	<div class="text">玥，爱你</div>
-	<div class="heart" style="position:absolute; left:500px; top:400px; width:auto; height:auto;"></div>
-	<link href="css/love.css" rel="stylesheet" type="text/css" />
-	<div class="love"></div>		
-	<script src="js/d3.min.js"></script>
-	<script type="text/javascript" src="js/love.js">	
-	</script>
-	</div>	
+        html, body {
+            width: 100%;
+            min-height: 100vh;
+            overflow-x: hidden;
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 25%, #ff9a9e 50%, #fad0c4 75%, #ffd1ff 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 漂浮爱心背景 */
+        #hearts-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .floating-heart {
+            position: absolute;
+            bottom: -50px;
+            color: rgba(255, 105, 135, 0.6);
+            animation: floatUp linear infinite;
+            user-select: none;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(0) rotate(0deg) scale(1);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-110vh) rotate(360deg) scale(0.5);
+                opacity: 0;
+            }
+        }
+
+        /* 主内容容器 */
+        .main-container {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        /* 标题区域 */
+        .title-section {
+            margin-bottom: 30px;
+        }
+
+        .main-title {
+            font-size: clamp(2rem, 6vw, 3.5rem);
+            font-weight: 300;
+            color: #d6336c;
+            text-shadow: 2px 2px 8px rgba(255, 255, 255, 0.5);
+            letter-spacing: 8px;
+            margin-bottom: 15px;
+            animation: titleFadeIn 2s ease-out;
+        }
+
+        .subtitle {
+            font-size: clamp(0.9rem, 2.5vw, 1.2rem);
+            color: #a61e4d;
+            opacity: 0.8;
+            letter-spacing: 4px;
+            animation: titleFadeIn 2s ease-out 0.3s both;
+        }
+
+        @keyframes titleFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 计时器 */
+        .timer-section {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px 20px;
+            margin: 0 auto 40px;
+            max-width: 600px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px rgba(214, 51, 108, 0.15);
+            animation: titleFadeIn 2s ease-out 0.6s both;
+        }
+
+        .timer-label {
+            font-size: clamp(0.85rem, 2vw, 1rem);
+            color: #a61e4d;
+            margin-bottom: 15px;
+            letter-spacing: 2px;
+        }
+
+        .timer-display {
+            display: flex;
+            justify-content: center;
+            gap: clamp(8px, 2vw, 20px);
+            flex-wrap: wrap;
+        }
+
+        .timer-unit {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 60px;
+        }
+
+        .timer-number {
+            font-size: clamp(1.5rem, 4vw, 2.2rem);
+            font-weight: 600;
+            color: #d6336c;
+            font-variant-numeric: tabular-nums;
+            text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.5);
+        }
+
+        .timer-text {
+            font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+            color: #c2255c;
+            margin-top: 4px;
+            opacity: 0.8;
+        }
+
+        /* 导航卡片 */
+        .nav-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            animation: titleFadeIn 2s ease-out 0.9s both;
+        }
+
+        .nav-card {
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px 20px;
+            text-decoration: none;
+            color: inherit;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 4px 20px rgba(214, 51, 108, 0.1);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .nav-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .nav-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 12px 40px rgba(214, 51, 108, 0.25);
+            background: rgba(255, 255, 255, 0.45);
+        }
+
+        .nav-card:hover::before {
+            left: 100%;
+        }
+
+        .nav-card:active {
+            transform: translateY(-2px) scale(0.98);
+        }
+
+        .card-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .card-title {
+            font-size: clamp(1rem, 2.5vw, 1.2rem);
+            font-weight: 600;
+            color: #d6336c;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .card-desc {
+            font-size: clamp(0.75rem, 1.8vw, 0.9rem);
+            color: #a61e4d;
+            opacity: 0.75;
+            line-height: 1.5;
+        }
+
+        /* 底部签名 */
+        .footer-signature {
+            margin-top: 40px;
+            font-size: clamp(0.75rem, 1.8vw, 0.9rem);
+            color: #a61e4d;
+            opacity: 0.6;
+            letter-spacing: 3px;
+            animation: titleFadeIn 2s ease-out 1.2s both;
+        }
+
+        /* 手机端适配 */
+        @media (max-width: 480px) {
+            body {
+                padding: 15px;
+                justify-content: flex-start;
+                padding-top: 40px;
+            }
+
+            .main-title {
+                letter-spacing: 4px;
+            }
+
+            .timer-section {
+                padding: 20px 15px;
+                margin-bottom: 30px;
+            }
+
+            .timer-unit {
+                min-width: 50px;
+            }
+
+            .nav-cards {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .nav-card {
+                padding: 20px 15px;
+            }
+
+            .card-icon {
+                font-size: 2rem;
+            }
+        }
+
+        /* 平板适配 */
+        @media (min-width: 481px) and (max-width: 768px) {
+            .nav-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="hearts-bg"></div>
+
+    <div class="main-container">
+        <div class="title-section">
+            <h1 class="main-title">甄 玥</h1>
+            <p class="subtitle">我 爱 你</p>
+        </div>
+
+        <div class="timer-section">
+            <div class="timer-label">我们已经相爱了</div>
+            <div class="timer-display">
+                <div class="timer-unit">
+                    <span class="timer-number" id="days">00</span>
+                    <span class="timer-text">天</span>
+                </div>
+                <div class="timer-unit">
+                    <span class="timer-number" id="hours">00</span>
+                    <span class="timer-text">时</span>
+                </div>
+                <div class="timer-unit">
+                    <span class="timer-number" id="minutes">00</span>
+                    <span class="timer-text">分</span>
+                </div>
+                <div class="timer-unit">
+                    <span class="timer-number" id="seconds">00</span>
+                    <span class="timer-text">秒</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-cards">
+            <a href="html/loveweb/index.html" class="nav-card">
+                <span class="card-icon">💗</span>
+                <div class="card-title">心动时刻</div>
+                <div class="card-desc">爱你，仿若流风之回雪</div>
+            </a>
+            <a href="html/loveweb2/index.html" class="nav-card">
+                <span class="card-icon">💌</span>
+                <div class="card-title">代码情书</div>
+                <div class="card-desc">一眼万年，甄爱一生</div>
+            </a>
+            <a href="html/loveweb3/index.html" class="nav-card">
+                <span class="card-icon">🌌</span>
+                <div class="card-title">星空誓言</div>
+                <div class="card-desc">执子之手，与子偕老</div>
+            </a>
+        </div>
+
+        <div class="footer-signature">— 明 爱 玥 —</div>
+    </div>
 
     <script>
-        function createSnowflake() {
-            const snowflake = document.createElement('div');
-            snowflake.classList.add('snowflake');
-            snowflake.style.left = Math.random() * window.innerWidth + 'px';
-            snowflake.style.animationDuration = Math.random() * 3 + 2 + 's';
-            snowflake.style.opacity = Math.random();
-            snowflake.style.fontSize = Math.random() * 10 + 10 + 'px';
+        // 恋爱计时器
+        const startDate = new Date('2022-11-20T00:00:00');
 
-            const randomColor = getRandomColor();
-            snowflake.style.backgroundColor = randomColor;
+        function updateTimer() {
+            const now = new Date();
+            const diff = now - startDate;
 
-			const letters = '012';
-			let l = letters[Math.floor(Math.random() * 3)];
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-            snowflake.innerHTML = '玥'; 
-			snowflake.textContent = '玥'; 
-
-            return snowflake;
+            document.getElementById('days').textContent = String(days).padStart(2, '0');
+            document.getElementById('hours').textContent = String(hours).padStart(2, '0');
+            document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
+            document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
         }
 
-        function getRandomColor() {
-            const letters = '0123456789ABCDEF';
-            let color = '#';
-            for (let i = 0; i < 6; i++) {
-                color += letters[Math.floor(Math.random() * 16)];
+        updateTimer();
+        setInterval(updateTimer, 1000);
+
+        // 漂浮爱心背景
+        const heartsBg = document.getElementById('hearts-bg');
+        const heartSymbols = ['❤', '💕', '💗', '💖', '💝', '🌸', '✨'];
+
+        function createFloatingHeart() {
+            const heart = document.createElement('div');
+            heart.className = 'floating-heart';
+            heart.textContent = heartSymbols[Math.floor(Math.random() * heartSymbols.length)];
+            heart.style.left = Math.random() * 100 + '%';
+            heart.style.fontSize = (Math.random() * 20 + 12) + 'px';
+            heart.style.animationDuration = (Math.random() * 8 + 8) + 's';
+            heart.style.animationDelay = Math.random() * 2 + 's';
+            heart.style.opacity = Math.random() * 0.5 + 0.3;
+            heartsBg.appendChild(heart);
+
+            setTimeout(() => {
+                heart.remove();
+            }, 18000);
+        }
+
+        // 初始创建一批爱心
+        for (let i = 0; i < 15; i++) {
+            setTimeout(createFloatingHeart, i * 300);
+        }
+
+        // 持续生成爱心
+        setInterval(createFloatingHeart, 800);
+
+        // 限制最大爱心数量
+        setInterval(() => {
+            if (heartsBg.children.length > 40) {
+                heartsBg.removeChild(heartsBg.firstChild);
             }
-            return color;
-        }
-
-        function snowfall() {
-            const snowContainer = document.getElementById('snow-container');
-            const numSnowflakes = 50; 
-
-            for (let i = 0; i < numSnowflakes; i++) {
-                const snowflake = createSnowflake();
-                snowContainer.appendChild(snowflake);
-            }
-        }
-
-        snowfall();
+        }, 2000);
     </script>
-
-    <script>
-        function createSakura() {
-            var sakura = document.createElement("div");
-            sakura.className = "sakura";
-            sakura.style.left = Math.random() * 100 + "vw";
-            sakura.style.animationDelay = Math.random() * 5 + "s";
-            document.body.appendChild(sakura);
-
-            setTimeout(function () {
-                sakura.remove();
-            }, 10000);
-        }
-
-        setInterval(createSakura, 200);
-   </script>
-	<h3>
-	<script type="text/javascript" src="js/jumplovepage.js"></script>
-	<div style="margin-left: 100px; margin-top: 50px;">
-		<a href="" id="redirect2love">爱你，仿若流风之回雪</a> 
-	</div>
-	<div style="margin-left: 100px; margin-top: 50px;">
-		<a href="" id="redirect2love2">一眼万年，甄爱一生</a> 
-	</div>
-	<div style="margin-left: 100px; margin-top: 50px;">
-		<a href="" id="redirect2love3">执子之手，与子偕老</a> 
-	</div>						
-	</h3>
-	</body>
+</body>
 </html>
