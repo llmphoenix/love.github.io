@@ -121,7 +121,7 @@
     setCanvasSize()
     canvas.style.position = 'absolute'
     canvas.style.left = '50%'
-    canvas.style.top = '50%'
+    canvas.style.top = '30%'
     canvas.style.transform = 'translate(-50%, -50%)'
   }
 
