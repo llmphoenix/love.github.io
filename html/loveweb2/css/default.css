@@ -221,12 +221,14 @@ body[data-theme="t5"] {
 
 #code .keyword {
     color: var(--keyword-color);
+    font-style: normal;
     font-weight: bold;
 }
 
 #code .comments {
     color: var(--comments-color);
     font-style: italic;
+    font-weight: bold;    
 }
 
 /* 打字光标：零宽度（不占布局空间、行尾不挤换行），"_" 溢出显示；

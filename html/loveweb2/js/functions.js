@@ -146,27 +146,8 @@ function startHeartAnimation() {
 	}, 400);
 })(jQuery);
 
-function timeElapse(c) {
-    var now = new Date();
-    var diff = (now.getTime() - new Date(c).getTime()) / 1000;
-
-    var days = Math.floor(diff / (3600 * 24));
-    diff = diff % (3600 * 24);
-    var hours = Math.floor(diff / 3600);
-    if (hours < 10) hours = "0" + hours;
-    diff = diff % 3600;
-    var minutes = Math.floor(diff / 60);
-    if (minutes < 10) minutes = "0" + minutes;
-    diff = diff % 60;
-    var seconds = Math.floor(diff);
-    if (seconds < 10) seconds = "0" + seconds;
-
-    var html = '<span class="digit">' + days + '</span> 天 ' +
-               '<span class="digit">' + hours + '</span> 时 ' +
-               '<span class="digit">' + minutes + '</span> 分 ' +
-               '<span class="digit">' + seconds + '</span> 秒';
-    $("#elapseClock").html(html);
-}
+// 恋爱计时逻辑已统一抽取到公共模块 js/timer.js（LoveTimer），
+// 此处不再重复定义 timeElapse，避免与公共模块重复维护、时区解析不一致。
 
 function showMessages() {
 	adjustWordsPosition();

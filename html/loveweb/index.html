@@ -304,27 +304,10 @@
         <div class="love-quote">爱你，仿若流风之回雪</div>
     </div>
 
+    <script src="../../js/timer.js"></script>
     <script>
-        // 计时器
-        const startDate = new Date('2022-11-20T19:00:00');
-
-        function updateTimer() {
-            const now = new Date();
-            const diff = now - startDate;
-
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-            document.getElementById('days').textContent = String(days).padStart(2, '0');
-            document.getElementById('hours').textContent = String(hours).padStart(2, '0');
-            document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
-            document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
-        }
-
-        updateTimer();
-        setInterval(updateTimer, 1000);
+        // 计时器（逻辑统一在 js/timer.js，此处只配置起始时间）
+        LoveTimer.init({ startDate: '2022-11-20T19:00:00', mode: 'digital' });
 
         // 飘落文字
         const fallingChars = document.getElementById('falling-chars');
