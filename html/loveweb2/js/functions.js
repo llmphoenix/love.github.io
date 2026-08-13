@@ -3,6 +3,10 @@ var offsetX = 0, offsetY = 0;
 var heartScale = 1; // 心形整体缩放，供 getHeartPoint 使用
 
 $(function () {
+    // 随机选择一套代码配色主题（对应 default.css 中 data-theme="t1"~"t5" 的五套配色）
+    var themes = ["t1", "t2", "t3", "t4", "t5"];
+    document.body.setAttribute("data-theme", themes[Math.floor(Math.random() * themes.length)]);
+
     initGarden();
 
     // 窗口大小变化时重新初始化（不刷新页面）

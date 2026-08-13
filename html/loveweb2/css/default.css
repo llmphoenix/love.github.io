@@ -131,17 +131,101 @@ body {
     flex-shrink: 0;
 }
 
+/* ============================================================
+   代码高亮配色 —— 心形花朵色系（五套随机切换）
+   来源：garden.js 花朵随机颜色
+   color: {rmin: 128, rmax: 255, gmin: 0, gmax: 128, bmin: 0, bmax: 128}
+   （R: 128-255，G: 0-128，B: 0-128）→ 红 / 粉 / 玫红 / 珊瑚 色系
+   ============================================================
+   五套配色通过 CSS 变量（--string/-keyword/-comments/-caret-color）
+   定义，由 functions.js 在页面加载时随机给 <body> 设置
+   data-theme="t1"~"t5"，实现每次进入随机一套配色。
+
+   ── 方案一 · 烈焰玫瑰（正红系） data-theme="t1" ────────────
+     .string  → #e63946   正红（花瓣最深处）
+     .keyword → #a61e4d   深玫红（花蕊）
+     .comments→ #f4978e   浅珊瑚粉（花瓣浅缘）
+     .caret   → #d6336c   玫红（爱心主色）
+
+   ── 方案二 · 樱花初恋（粉红系） data-theme="t2" ────────────
+     .string  → #d6336c   玫红（爱心主色）
+     .keyword → #9d174d   深玫瑰（花心）
+     .comments→ #ff8fab   樱花粉（花瓣）
+     .caret   → #e91e63   桃红（花苞）
+
+   ── 方案三 · 热情珊瑚（珊瑚橙红系） data-theme="t3" ────────
+     .string  → #ff6f61   珊瑚红
+     .keyword → #c0392b   石榴红
+     .comments→ #ffb199   蜜桃粉
+     .caret   → #ff8a65   珊瑚橙
+
+   ── 方案四 · 经典玫红（玫红系） data-theme="t4" ────────────
+     .string  → #c2185b   品红
+     .keyword → #880e4f   绛紫红
+     .comments→ #ff80ab   淡玫红
+     .caret   → #f06292   水红
+
+   ── 方案五 · 绯红薄暮（深红系） data-theme="t5" ────────────
+     .string  → #e3242b   绯红
+     .keyword → #8b0000   暗红
+     .comments→ #ff9999   浅绯
+     .caret   → #ff4d4d   亮红
+   ============================================================ */
+
+/* 默认主题（t2 樱花初恋，无 data-theme 时的兜底） */
+:root {
+    --string-color: #d6336c;
+    --keyword-color: #9d174d;
+    --comments-color: #ff8fab;
+    --caret-color: #e91e63;
+}
+
+body[data-theme="t1"] {
+    --string-color: #e63946;
+    --keyword-color: #a61e4d;
+    --comments-color: #f4978e;
+    --caret-color: #d6336c;
+}
+
+body[data-theme="t2"] {
+    --string-color: #d6336c;
+    --keyword-color: #9d174d;
+    --comments-color: #ff8fab;
+    --caret-color: #e91e63;
+}
+
+body[data-theme="t3"] {
+    --string-color: #ff6f61;
+    --keyword-color: #c0392b;
+    --comments-color: #ffb199;
+    --caret-color: #ff8a65;
+}
+
+body[data-theme="t4"] {
+    --string-color: #c2185b;
+    --keyword-color: #880e4f;
+    --comments-color: #ff80ab;
+    --caret-color: #f06292;
+}
+
+body[data-theme="t5"] {
+    --string-color: #e3242b;
+    --keyword-color: #8b0000;
+    --comments-color: #ff9999;
+    --caret-color: #ff4d4d;
+}
+
 #code .string {
-    color: #2a36ff;
+    color: var(--string-color);
 }
 
 #code .keyword {
-    color: #7f0055;
+    color: var(--keyword-color);
     font-weight: bold;
 }
 
 #code .comments {
-    color: #3f7f5f;
+    color: var(--comments-color);
     font-style: italic;
 }
 
@@ -151,7 +235,7 @@ body {
     display: inline-block;
     width: 0;
     overflow: visible;
-    color: #d6336c;
+    color: var(--caret-color);
     font-weight: bold;
     visibility: visible;
 }
