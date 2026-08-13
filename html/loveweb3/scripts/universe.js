@@ -16,6 +16,119 @@ var canva = document.getElementById('universe');
 var stars = [];
 var universe;
 
+// ============================================================
+// 浪漫流星雨 —— 随机出现；520 时刻触发大量流星雨
+// ============================================================
+var loveMeteors = [];       // 活跃流星
+var loveMeteorCd = 0;       // 生成冷却（帧）
+
+/**
+ * 是否处于 520 时刻（触发大量流星雨）：
+ *  - 5 月 20 号当天（无论几点，整天都是浪漫日）
+ *  - 或每天 5:20（上午 05:20）与 17:20（下午 05:20）
+ */
+function is520Moment() {
+  var now = new Date();
+  // 5 月 20 日（getMonth() 从 0 开始，5 月 = 4）
+  var isMay20 = now.getMonth() === 4 && now.getDate() === 20;
+  if (isMay20) return isOnTheHour(now);
+  // 5 点 20 分：上午 05:20 或 下午 17:20
+  var h = now.getHours();
+  return (h === 5 || h === 17) && now.getMinutes() === 20;
+}
+
+/** 是否整点（非 520 时概率稍高） */
+function isOnTheHour(now) {
+  now = now || new Date();
+  return now.getMinutes() === 0 && now.getSeconds() <= 5;
+}
+
+/** 浪漫色板：粉 / 金 / 紫罗兰 / 冰蓝 / 玫瑰红 */
+var METEOR_HUES = [325, 45, 270, 205, 340];
+
+/** 生成一颗浪漫流星 */
+function spawnMeteor() {
+  var x, y, angle;
+  if (Math.random() < 0.6) {
+    // 从顶部划过，斜向左下
+    x = getRandInterval(0, width);
+    y = getRandInterval(-30, height * 0.3);
+    angle = getRandInterval(Math.PI * 0.75, Math.PI * 0.98);
+  } else {
+    // 从左上方划向右下
+    x = getRandInterval(-40, width * 0.5);
+    y = getRandInterval(-20, height * 0.35);
+    angle = getRandInterval(Math.PI * 0.55, Math.PI * 0.85);
+  }
+  var speed = getRandInterval(7, 14); // px/帧（浪漫的慢速划过）
+  loveMeteors.push({
+    x: x,
+    y: y,
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
+    len: getRandInterval(90, 180),   // 拖尾长度
+    hue: METEOR_HUES[Math.floor(Math.random() * METEOR_HUES.length)],
+    life: getRandInterval(80, 170),  // 存活帧数
+    age: 0,
+    size: getRandInterval(1.4, 2.6)  // 头部半径
+  });
+}
+
+/** 绘制一颗浪漫流星（渐变拖尾 + 发光头部） */
+function drawMeteor(m) {
+  var headX = m.x, headY = m.y;
+  var tailX = m.x - m.vx * m.len * 0.6;
+  var tailY = m.y - m.vy * m.len * 0.6;
+
+  // 拖尾：从头部亮色渐变到透明
+  var grad = universe.createLinearGradient(headX, headY, tailX, tailY);
+  grad.addColorStop(0, 'hsla(' + m.hue + ',100%,88%,0.95)');
+  grad.addColorStop(0.4, 'hsla(' + m.hue + ',100%,72%,0.45)');
+  grad.addColorStop(1, 'hsla(' + m.hue + ',100%,60%,0)');
+  universe.strokeStyle = grad;
+  universe.lineWidth = m.size;
+  universe.lineCap = 'round';
+  universe.beginPath();
+  universe.moveTo(headX, headY);
+  universe.lineTo(tailX, tailY);
+  universe.stroke();
+
+  // 头部光晕（buling 星芒感）
+  var glow = universe.createRadialGradient(headX, headY, 0, headX, headY, m.size * 5);
+  glow.addColorStop(0, 'hsla(' + m.hue + ',100%,92%,0.85)');
+  glow.addColorStop(1, 'hsla(' + m.hue + ',100%,70%,0)');
+  universe.fillStyle = glow;
+  universe.beginPath();
+  universe.arc(headX, headY, m.size * 5, 0, Math.PI * 2);
+  universe.fill();
+}
+
+/** 每帧更新流星：移动 + 按概率生成新流星 */
+function updateMeteors() {
+  for (var i = 0; i < loveMeteors.length; i++) {
+    var m = loveMeteors[i];
+    m.x += m.vx;
+    m.y += m.vy;
+    m.age++;
+  }
+
+  loveMeteorCd--;
+  if (loveMeteorCd <= 0) {
+    var boost = is520Moment();    // 520 时刻 → 大量流星雨
+    var hourBoost = isOnTheHour(); // 整点 → 概率稍高
+    // 520：0.5/帧（密集倾泻）；整点：0.12/帧；平时：0.02/帧（偶尔闪现）
+    var prob = boost ? 0.5 : (hourBoost ? 0.12 : 0.02);
+    if (Math.random() < prob) {
+      spawnMeteor();
+      if (boost) loveMeteorCd = Math.floor(getRandInterval(5, 22));
+      else if (hourBoost) loveMeteorCd = Math.floor(getRandInterval(15, 50));
+      else loveMeteorCd = Math.floor(getRandInterval(40, 130));  
+    } else {
+      loveMeteorCd = 1;
+    }
+  }
+}
+
 windowResizeHandler();
 window.addEventListener('resize', windowResizeHandler, false);
 
@@ -43,6 +156,16 @@ function draw() {
     star.fadeIn();
     star.fadeOut();
     star.draw();
+  }
+
+  // ==== 浪漫流星雨 ====
+  updateMeteors();
+  for (var m = 0; m < loveMeteors.length; m++) {
+    drawMeteor(loveMeteors[m]);
+  }
+  // 移除已消失的流星
+  for (var k = loveMeteors.length - 1; k >= 0; k--) {
+    if (loveMeteors[k].age >= loveMeteors[k].life) loveMeteors.splice(k, 1);
   }
 
   window.requestAnimationFrame(draw);
