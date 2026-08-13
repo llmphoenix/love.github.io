@@ -35,8 +35,8 @@ body {
 /* ===== 心形月亮：镭射心形如月悬挂于画面左上方 ===== */
 .flower-side {
     position: fixed;
-    top: 110px;
-    left: 140px;
+    top: 150px;
+    left: 180px;
     width: clamp(70px, 11vmin, 120px);
     height: clamp(70px, 11vmin, 120px);
     z-index: 5;

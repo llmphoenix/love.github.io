@@ -70,6 +70,26 @@
     }
   }
 
+  // 心形实心填充：镭射流光 + 中央月光白亮，让中空心形变成饱满的月亮
+  function drawHeartFill (cx, cy, scale, sec) {
+    var hue = (sec * 40) % 360                    // 镭射流光色相循环
+    var grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, scale * 17)
+    grad.addColorStop(0, 'hsla(' + hue + ',95%,88%,0.58)')             // 中心：白亮月光
+    grad.addColorStop(0.45, 'hsla(' + ((hue + 30) % 360) + ',95%,78%,0.42)')
+    grad.addColorStop(1, 'hsla(' + ((hue + 60) % 360) + ',90%,70%,0.16)')  // 边缘：淡淡镭射
+    ctx.fillStyle = grad
+    ctx.beginPath()
+    for (var t = 0; t <= Math.PI * 2 + 0.01; t += 0.02) {
+      var p = heartXY(t)
+      var x = cx + p.x * scale
+      var y = cy - p.y * scale
+      if (t === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    }
+    ctx.closePath()
+    ctx.fill()
+  }
+
   function drawFlower (f, x, y, sec) {
     var size = f.size
     var petals = f.petals
@@ -137,6 +157,8 @@
     var scale = Math.min(W, H) / (BASE_HALF * 2 + 4)
     var cx = W / 2
     var cy = H / 2 + scale * 1.5 // 心形视觉居中（下尖稍长）
+
+    drawHeartFill(cx, cy, scale, ts / 1000) // 实心月亮填充
 
     for (var i = 0; i < flowers.length; i++) {
       var f = flowers[i]
