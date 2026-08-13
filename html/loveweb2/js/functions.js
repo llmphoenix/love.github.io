@@ -1,5 +1,6 @@
 var $window = $(window), gardenCtx, gardenCanvas, $garden, garden;
 var offsetX = 0, offsetY = 0;
+var heartScale = 1; // 心形整体缩放，供 getHeartPoint 使用
 
 $(function () {
     initGarden();
@@ -23,8 +24,28 @@ function initGarden() {
     var heartWidth = $loveHeart.width();
     var heartHeight = $loveHeart.height();
 
+    // 心形曲线本征尺寸（未缩放前，scale = min(w,h)/600 时的实际像素范围）
+    // x: [-312, 312]，y: [-238.5, 340]，几何中心 (0, 50.7675)
+    var baseWidth = 624;
+    var baseHeight = 578.5;
+
+    // 1. 先按比例缩放，使心形轮廓尽量铺满画布
+    var scale = Math.min(heartWidth / baseWidth, heartHeight / baseHeight);
+
+    // 2. 再额外缩小，给花朵的半径+花瓣伸展预留边距，避免被画布边缘裁剪
+    //    花朵最大伸展 ≈ bloomRadius.max × petalStretch.max = 30（未缩放）
+    var margin = 30;
+    scale = Math.min(
+        scale,
+        (heartWidth - 2 * margin) / baseWidth,
+        (heartHeight - 2 * margin) / baseHeight
+    );
+
+    heartScale = scale;
+
+    // 3. 心形曲线包围盒几何中心 (0, 50.7675) 对齐到画布中心，实现居中
     offsetX = heartWidth / 2;
-    offsetY = heartHeight / 2 - heartHeight * 0.08;
+    offsetY = heartHeight / 2 - 50.7675 * scale;
 
     $garden = $("#garden");
     gardenCanvas = $garden[0];
@@ -45,9 +66,8 @@ function initGarden() {
 
 function getHeartPoint(c) {
     var b = c / Math.PI;
-    var scale = Math.min(gardenCanvas.width, gardenCanvas.height) / 600;
-    var a = 19.5 * (16 * Math.pow(Math.sin(b), 3)) * scale;
-    var d = -20 * (13 * Math.cos(b) - 5 * Math.cos(2 * b) - 2 * Math.cos(3 * b) - Math.cos(4 * b)) * scale;
+    var a = 19.5 * (16 * Math.pow(Math.sin(b), 3)) * heartScale;
+    var d = -20 * (13 * Math.cos(b) - 5 * Math.cos(2 * b) - 2 * Math.cos(3 * b) - Math.cos(4 * b)) * heartScale;
     return new Array(offsetX + a, offsetY + d);
 }
 
@@ -85,6 +105,12 @@ function startHeartAnimation() {
 			var d = a(this), c = d.html(), b = 0;
 			d.html("");
 			var e = setInterval(function () {
+				// 遇到 HTML 注释 <!-- ... --> 时整体跳过，避免注释文本被逐字打出、
+				// 以及未闭合注释前缀导致 DOM 内容全部消失
+				if (c.substr(b, 4) == "<!--") {
+					var end = c.indexOf("-->", b);
+					b = (end == -1 ? c.length : end + 3);
+				}
 				var f = c.substr(b, 1);
 				if (f == "<") {
 					b = c.indexOf(">", b) + 1
@@ -131,9 +157,11 @@ function showMessages() {
 }
 
 function adjustWordsPosition() {
+	// 将文字定位到 #loveHeart（即心形画布）正中心
 	$("#words").css("position", "absolute");
-	$("#words").css("top", $("#garden").position().top + 195);
-	$("#words").css("left", $("#garden").position().left + 70)
+	$("#words").css("top", "50%");
+	$("#words").css("left", "50%");
+	$("#words").css("transform", "translate(-50%, -50%)");
 }
 
 function adjustCodePosition() {
