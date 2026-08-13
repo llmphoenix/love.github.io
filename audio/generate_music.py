@@ -84,7 +84,7 @@ def write_mp3(samples, path):
         pcm.append(sv)
     data = b''.join(sv.to_bytes(2, 'little', signed=True) for sv in pcm)
     enc = lameenc.Encoder()
-    enc.set_bit_rate(128)
+    enc.set_bit_rate(192)
     enc.set_in_sample_rate(SAMPLE_RATE)
     enc.set_channels(1)
     enc.set_quality(2)
@@ -109,45 +109,76 @@ def build_events(notes, tempo_bpm, rhythm=0.5, vel=1.0, key='C', chord='maj'):
         t += dur
     return events
 
-# ---------------- 曲目 1：Broken Elegance 保留，新增原创曲目 ----------------
+def extend_events(events, total_sec):
+    """把一段旋律事件循环扩展到指定时长（不重叠在淡出区）"""
+    if not events:
+        return events
+    loop_len = max(ev[1] + ev[2] for ev in events) + 0.5  # 一段的长度
+    out = list(events)
+    t = loop_len
+    # 用同样的事件但逐渐轻微降速/降响度模拟变奏（简单的二次重复）
+    while t < total_sec - 3.0:  # 留 3 秒淡出
+        for ev in events:
+            # 第二次重复力度略轻，第三次略加重，制造层次
+            rep = int(round(t / loop_len))
+            vel = ev[3]
+            if rep % 2 == 1:
+                vel *= 0.9
+            out.append((ev[0], t + ev[1], ev[2], vel))
+        t += loop_len
+    return out
 
-SONGS = {
-    # 1. 温柔告白（C 大调，行板，舒缓上行旋律）
-    'Tender Confession.mp3': {
-        'length': 45,
-        'events': build_events([
-            (midi('E', 5), 2), (midi('G', 5), 2), (midi('A', 5), 2),
-            (midi('G', 5), 2), (midi('E', 5), 3), (midi('D', 5), 1),
-            (midi('C', 5), 4), (midi('E', 5), 2), (midi('G', 5), 2),
-            (midi('A', 5), 2), (midi('C', 6), 2), (midi('B', 5), 3), (midi('G', 5), 1),
-            (midi('E', 5), 2), (midi('D', 5), 2), (midi('C', 5), 4),
-        ], tempo_bpm=72, vel=0.95),
-    },
-    # 2. 星空恋语（G 大调，稍快，跳跃感）
-    'Starlit Promise.mp3': {
-        'length': 42,
-        'events': build_events([
-            (midi('G', 4), 1), (midi('D', 5), 1), (midi('B', 4), 2),
-            (midi('D', 5), 1), (midi('G', 5), 1), (midi('F#', 5), 2),
-            (midi('E', 5), 1), (midi('D', 5), 1), (midi('C', 5), 2),
-            (midi('D', 5), 2), (midi('B', 4), 2), (midi('G', 4), 4),
-            (midi('A', 4), 1), (midi('B', 4), 1), (midi('C', 5), 2),
-            (midi('D', 5), 2), (midi('E', 5), 2), (midi('F#', 5), 2),
-            (midi('D', 5), 4),
-        ], tempo_bpm=88, vel=0.95),
-    },
-    # 3. 永恒誓言（F 大调，慢板，深情长音）
-    'Eternal Vow.mp3': {
-        'length': 48,
-        'events': build_events([
-            (midi('A', 4), 3), (midi('C', 5), 1), (midi('F', 5), 4),
-            (midi('E', 5), 3), (midi('D', 5), 1), (midi('C', 5), 4),
-            (midi('D', 5), 2), (midi('E', 5), 2), (midi('F', 5), 4),
-            (midi('A', 5), 3), (midi('G', 5), 1), (midi('F', 5), 4),
-            (midi('E', 5), 2), (midi('C', 5), 2), (midi('D', 5), 4),
-        ], tempo_bpm=66, vel=0.98),
-    },
+# ---------------- 原创曲目（每首约 2 分钟） ----------------
+
+# 三首曲子的基础旋律（一段约 20-30 秒）
+MELODIES = {
+    'Tender Confession.mp3': [
+        (midi('E', 5), 2), (midi('G', 5), 2), (midi('A', 5), 2),
+        (midi('G', 5), 2), (midi('E', 5), 3), (midi('D', 5), 1),
+        (midi('C', 5), 4), (midi('E', 5), 2), (midi('G', 5), 2),
+        (midi('A', 5), 2), (midi('C', 6), 2), (midi('B', 5), 3), (midi('G', 5), 1),
+        (midi('E', 5), 2), (midi('D', 5), 2), (midi('C', 5), 4),
+    ],
+    'Starlit Promise.mp3': [
+        (midi('G', 4), 1), (midi('D', 5), 1), (midi('B', 4), 2),
+        (midi('D', 5), 1), (midi('G', 5), 1), (midi('F#', 5), 2),
+        (midi('E', 5), 1), (midi('D', 5), 1), (midi('C', 5), 2),
+        (midi('D', 5), 2), (midi('B', 4), 2), (midi('G', 4), 4),
+        (midi('A', 4), 1), (midi('B', 4), 1), (midi('C', 5), 2),
+        (midi('D', 5), 2), (midi('E', 5), 2), (midi('F#', 5), 2),
+        (midi('D', 5), 4),
+    ],
+    'Eternal Vow.mp3': [
+        (midi('A', 4), 3), (midi('C', 5), 1), (midi('F', 5), 4),
+        (midi('E', 5), 3), (midi('D', 5), 1), (midi('C', 5), 4),
+        (midi('D', 5), 2), (midi('E', 5), 2), (midi('F', 5), 4),
+        (midi('A', 5), 3), (midi('G', 5), 1), (midi('F', 5), 4),
+        (midi('E', 5), 2), (midi('C', 5), 2), (midi('D', 5), 4),
+    ],
 }
+
+# 每首目标时长（秒）
+TARGET_SEC = {
+    'Tender Confession.mp3': 120,
+    'Starlit Promise.mp3': 115,
+    'Eternal Vow.mp3': 125,
+}
+
+# 每首速度
+TEMPOS = {
+    'Tender Confession.mp3': 72,
+    'Starlit Promise.mp3': 88,
+    'Eternal Vow.mp3': 66,
+}
+
+SONGS = {}
+for fname, notes in MELODIES.items():
+    events = build_events(notes, tempo_bpm=TEMPOS[fname], vel=0.95)
+    events = extend_events(events, TARGET_SEC[fname])
+    SONGS[fname] = {
+        'length': TARGET_SEC[fname],
+        'events': events,
+    }
 
 def main():
     os.makedirs(AUDIO_DIR, exist_ok=True)

@@ -213,6 +213,9 @@
         },
         getPlaylist: function () {
             return PLAYLIST.slice();
+        },
+        getCurrent: function () {
+            return currentIndex >= 0 ? PLAYLIST[currentIndex] : null;
         }
     };
 })(window);
