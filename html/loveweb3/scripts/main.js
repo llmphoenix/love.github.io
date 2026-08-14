@@ -23,13 +23,13 @@
 
   function setCanvasSize() {
     var screenWidth = window.innerWidth;
-    // 移动端优先：CSS 会再按 92vw 缩放，逻辑尺寸保持清晰即可
-    CANVASWIDTH = Math.min(Math.max(screenWidth * 0.9, 300), 1000);
-    // 移动端提高画布高度比例（0.22），让文字更大更饱满、粒子更明显
-    CANVASHEIGHT = Math.min(CANVASWIDTH * (screenWidth <= 480 ? 0.22 : 0.18), 150);
-    // 粒子密度：移动端稍密一点，保证字形完整清晰（但不过载）
-    var density = screenWidth <= 480 ? 55 : 75;
-    PARTICLE_NUM = Math.floor(CANVASWIDTH * CANVASHEIGHT / density);
+    var isPortraitMobile = screenWidth <= 480;
+    // 逻辑画布宽 = 视口可用宽（CSS 里画布按 100% 宽显示，逻辑与显示 1:1，不会左右裁剪）
+    CANVASWIDTH = Math.min(Math.max(screenWidth, 300), 1000);
+    // 高度比例：竖屏 0.22 / 其他 0.18，让文字饱满
+    CANVASHEIGHT = Math.min(Math.max(CANVASWIDTH * (isPortraitMobile ? 0.22 : 0.18), 60), 150);
+    // 粒子数：按最长文字所需取样点自适应（保证所有文字粒子完整、横屏清晰）
+    PARTICLE_NUM = particleNeed(CANVASWIDTH, CANVASHEIGHT);
     textSize = Math.floor(CANVASHEIGHT * 0.55);
 
     if (canvas) {
@@ -39,16 +39,46 @@
     textWidth = 0 // 强制重算文字宽度
   }
 
+  // 按最长文字在画布上的取样点估算所需粒子数（step 按 320 基准，保持采样疏密适中）
+  function particleNeed (W, H) {
+    var step = Math.max(2, Math.round(W / 320))
+    // 画布可采样总格数（步长网格）
+    var totalCells = Math.floor(W / step) * Math.floor(H / step)
+    // 最长文字“执子之手，矢志不渝”约占满整行，字形笔画覆盖率约 55%~62%
+    // 取中间值 0.58 并留 15% 余量，保证粒子充足不稀疏
+    return Math.min(Math.floor(totalCells * 0.58 * 1.15), 6000)
+  }
+
+  function textFont (size) {
+    return size + 'px \'SimHei\', \'Avenir\', \'Helvetica Neue\', \'Arial\', \'sans-serif\''
+  }
+
+  // 自动缩放字号：把当前文字缩到画布宽度 96% 以内，避免手机竖屏窄画布截断
+  function fitTextToCanvas () {
+    var size = textSize
+    var maxWidth = CANVASWIDTH * 0.96
+    ctx.font = textFont(size)
+    var w = ctx.measureText(text).width
+    while (w > maxWidth && size > 16) {
+      size -= 1
+      ctx.font = textFont(size)
+      w = ctx.measureText(text).width
+    }
+    textSize = size
+    textWidth = w
+  }
+
   function draw () {
     ctx.clearRect(0, 0, CANVASWIDTH, CANVASHEIGHT)
     ctx.fillStyle = 'rgb(255, 255, 255)'
     ctx.textBaseline = 'middle'
     ctx.fontWeight = 'bold'
-    ctx.font = textSize + 'px \'SimHei\', \'Avenir\', \'Helvetica Neue\', \'Arial\', \'sans-serif\''
     // 文字宽度缓存：文本不变时避免每帧 measureText（移动端省电）
     if (textWidth === 0) {
-      textWidth = ctx.measureText(text).width
+      // 首次绘制 / 文字或画布变化时：自动缩放字号，确保长文字完整落在画布内（手机竖屏不截断）
+      fitTextToCanvas()
     }
+    ctx.font = textFont(textSize)
     ctx.fillText(text, (CANVASWIDTH - textWidth) * 0.5, CANVASHEIGHT * 0.5)
 
     let imgData = ctx.getImageData(0, 0, CANVASWIDTH, CANVASHEIGHT)
@@ -66,7 +96,8 @@
 
   function particleText (imgData) {
     var pxls = []
-    var step = Math.max(2, Math.floor(CANVASWIDTH / 300))
+    // 采样步长更疏（320 基准）：横屏画布大时不再密集到粒子数不足，文字更完整清晰
+    var step = Math.max(2, Math.round(CANVASWIDTH / 320))
     for (var w = CANVASWIDTH; w > 0; w -= step) {
       for (var h = 0; h < CANVASHEIGHT; h += step) {
         var index = (w + h * (CANVASWIDTH)) * 4

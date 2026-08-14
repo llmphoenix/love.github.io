@@ -144,6 +144,7 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     max-width: 100%;
+    max-height: 100%;
 }
 
 /* 返回按钮 */
@@ -285,8 +286,9 @@ body {
         height: clamp(42px, 12vw, 65px);
     }
 
+    /* 画布按 100% 宽度显示，与 JS 逻辑宽一致，避免竖屏左裁剪 */
     .stage-side #canvas {
-        max-width: 92vw;
+        width: 100%;
     }
 
     /* 移动端降低背景光晕的模糊半径（减少 GPU 负担，保持观感） */
@@ -351,8 +353,10 @@ body {
         top: 58% !important;
     }
 
+    /* 画布按 100% 宽显示，与 JS 逻辑宽 1:1，避免横屏压缩拉伸 */
     .stage-side #canvas {
-        max-width: 88vw;
+        width: 100%;
+        max-width: 100%;
     }
 
     /* 提示文字：贴底部安全区 */
