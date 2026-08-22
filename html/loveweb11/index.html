@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>花雨之约 - 明爱玥</title>
+    <link rel="stylesheet" href="styles/blossom.css?v=20260822">
+</head>
+<body>
+    <a href="../../index.html" class="back-btn">← 返回</a>
+
+    <div class="music-control" id="musicBtn">
+        <span class="music-icon">🎵</span>
+        <span class="music-text">播放音乐</span>
+    </div>
+
+    <!-- 花雨之约主画布 -->
+    <canvas id="blossom"></canvas>
+
+    <div class="page-title">花 雨 之 约</div>
+
+    <div class="hint-text">点击花雨，许下春日之约 🌸</div>
+
+    <script src="scripts/blossom.js?v=20260822"></script>
+    <!-- 爱心流星鼠标轨迹拖尾 -->
+    <script src="../../js/heart-trail.js?v=20260814-mobile"></script>
+    <!-- 统一背景音乐播放器（随机播放，跨页面延续） -->
+    <script src="../../js/music-player.js?v=20260814-mobile"></script>
+    <script>
+        // 背景音乐（随机播放，逻辑统一在 js/music-player.js）
+        MusicPlayer.init({ audioDir: '../../audio', buttonId: 'musicBtn' });
+    </script>
+</body>
+</html>
