@@ -286,7 +286,14 @@
 
     // 爆炸一朵烟花（真实感增强版）
     // opts: { type, palette, scale(粒子倍率), speedScale, crackle(二次爆裂概率), glow(核心光强度) }
+    // 效果计数：用于统计一次点击 1s 内的实际烟花效果数（验证上限 2~5）
+    var burstEffectLog = []; // 记录最近爆炸时间戳（用于测试统计）
+
     function explode(x, y, opts) {
+        // 记录本次爆炸时间（供效果数统计）
+        burstEffectLog.push(performance.now());
+        if (burstEffectLog.length > 30) burstEffectLog.shift();
+
         opts = opts || {};
         var type = opts.type !== undefined ? opts.type : Math.floor(Math.random() * 14);
         var palette = opts.palette || randomPalette();
@@ -502,6 +509,9 @@
     }
 
     // ============ 点击爆炸组合（数量 / 绚烂 / 浪漫随激情变化） ============
+    // 性能档位：移动端效果上限更低（考虑 PC/手机性能最大值）
+    var MAX_BURST_EFFECTS = isMobile ? 4 : 5; // 一次点击 1s 内最多烟花效果数
+
     function explodeBurst(x, y) {
         recordClick();
         var p = getPassion();
@@ -510,17 +520,28 @@
         var jitter = 0.8 + Math.random() * 0.4;
         var pj = Math.min(1, p * jitter);
 
-        // 主烟花数量：低激情 1 朵 → 高激情 2~3 朵
+        // 主烟花数量：低激情 1 朵 → 高激情 2~3 朵（但受总效果上限约束）
         var mainCount = 1 + Math.floor(Math.random() * (1 + Math.round(p * 2)));
-        // 卫星烟花数量：低激情 0 → 高激情 2~6 朵（环绕主烟花）
+        // 卫星烟花数量：低激情 0 → 高激情 2~6 朵（受上限约束）
         var satCount = Math.round(p * (2 + Math.random() * 4));
+
+        // 【性能约束】1s 内总烟花效果数控制在 2~5 个（移动端 ≤4）
+        // 先满足主烟花，多余额度给卫星烟花
+        var totalEffects = mainCount + satCount;
+        var effectBudget = 2 + Math.round(Math.random() * (MAX_BURST_EFFECTS - 2)); // 2~5（移动2~4）
+        if (totalEffects > effectBudget) {
+            // 优先保留主烟花，压缩卫星烟花数量
+            mainCount = Math.min(mainCount, Math.max(1, effectBudget - 1));
+            satCount = Math.max(0, effectBudget - mainCount);
+        }
 
         var particleScale = 1 + p * 0.9 + Math.random() * 0.3;
         var speedScale = 1 + p * 0.35 + Math.random() * 0.2;
         var crackleChance = p * 0.35;
         var glow = 1 + p * 1.2 + Math.random() * 0.3;
         var heartChance = 0.15 + p * 0.45;
-        var textChance = 0.08 + p * 0.6;
+        var shortTextChance = 0.08 + p * 0.6; // 短词：保持原频率
+        var loveChance = 0.05 + p * 0.06;      // 长情话：低概率（约 5%~11%）
         var heartCount = Math.round(1 + p * 6 + Math.random() * 3);
 
         // 主烟花：第一发立即绽放，其余在 60~280ms 内错开（尽量短，不超过 ~0.3s）
@@ -565,10 +586,17 @@
             }
         }
 
-        // 文字祝福：延迟 ~200~500ms 出现（主烟花爆开之后浮现）
-        if (Math.random() < textChance) {
+        // 短词祝福：保持原频率（单行，延迟 ~200~500ms）
+        if (Math.random() < shortTextChance) {
             scheduleEffect(200 + Math.random() * 300, (function (tx, ty) {
-                return function () { explodeText(tx, ty); };
+                return function () { explodeShortText(tx, ty); };
+            })(x, y));
+        }
+
+        // 长情话：低概率触发（多行，延迟稍晚），由 ensureLoveAppears 保证最低频率
+        if (Math.random() < loveChance) {
+            scheduleEffect(250 + Math.random() * 300, (function (tx, ty) {
+                return function () { tryLoveText(tx, ty); };
             })(x, y));
         }
 
@@ -586,9 +614,12 @@
     var autoLaunchInterval = isMobile ? 2200 : 1400; // 自动发射间隔（ms）
     var lastTime = 0;
 
-    // ============ 浪漫情话系统（完整短句，1 分钟至少一次） ============
+    // ============ 文字系统 ============
+    // 短词：高频出现（保持原频率），单行小字，如 "爱你" / "520" / "Forever"
+    var SHORT_WORDS = ['爱你', 'Forever', '甄玥', '♡', '520', '1314'];
+    // 长情话：低频出现（完整三行短句），由定时器保证 1min 至少一次
     var LOVE_WORDS = [
-        ['爱你', 'Forever', '甄玥', '♡', '520', '1314'],
+        ['甄玥,爱你Forever', '♡', '5201314'],
         ['我想把全世界的浪漫', '都藏进一朵烟花里', '只为在你抬头时绽放'],
         ['爱意像夜空里最亮的星', '穿越亿万光年', '只为落在你眼里'],
         ['遇见你之后', '人间四季皆是春天', '星河滚烫也及不上你半分温柔'],
@@ -606,11 +637,40 @@
         ['你是我的独家记忆', '也是我的来日方长', '岁岁年年，皆是你']
     ];
     var textBursts = [];
-    var lastLoveTime = 0; // 上一次情话出现时间（用于确保 1min 至少一次）
-    var LOVE_INTERVAL = 60000; // 60 秒
+    var lastLoveTime = 0; // 上一次长情话出现时间（用于保证 1min 至少一次）
+    var LOVE_INTERVAL = 60000; // 60 秒保底
     var usedLoveIndex = -1;
+    var usedShortIndex = -1;
+    // 1min 内情话出现次数统计（用于上限控制，最多 ~2 次）
+    var loveTimes = [];
+    var MAX_LOVE_PER_MIN = 2;
 
-    // 随机选一句不重复的情话（避免连续重复）
+    // 记录一次长情话出现时间（用于 1min 频率上限统计）
+    function recordLoveTime() {
+        var now = performance.now();
+        loveTimes.push(now);
+        while (loveTimes.length && now - loveTimes[0] > 60000) loveTimes.shift();
+        lastLoveTime = now;
+    }
+
+    // 1min 内长情话出现次数
+    function loveCountInMinute() {
+        var now = performance.now();
+        while (loveTimes.length && now - loveTimes[0] > 60000) loveTimes.shift();
+        return loveTimes.length;
+    }
+
+    // 短词：随机选一个不连续重复
+    function pickShortWord() {
+        var idx = Math.floor(Math.random() * SHORT_WORDS.length);
+        if (idx === usedShortIndex && SHORT_WORDS.length > 1) {
+            idx = (idx + 1 + Math.floor(Math.random() * (SHORT_WORDS.length - 1))) % SHORT_WORDS.length;
+        }
+        usedShortIndex = idx;
+        return SHORT_WORDS[idx];
+    }
+
+    // 长情话：随机选一句不重复（避免连续重复）
     function pickLoveLine() {
         var idx = Math.floor(Math.random() * LOVE_WORDS.length);
         if (idx === usedLoveIndex && LOVE_WORDS.length > 1) {
@@ -620,8 +680,32 @@
         return LOVE_WORDS[idx];
     }
 
+    // 短词：单行大字，快速浮现后淡出（保持原频率与观感）
+    function explodeShortText(x, y) {
+        var word = pickShortWord();
+        textBursts.push({
+            x: x, y: y,
+            lines: [word],
+            alpha: 0,
+            scale: 0.6,
+            life: 0,
+            fadeIn: 0.06,
+            fadeOut: 0.025,
+            hold: 55,       // 短词停留短一些
+            maxLife: 110,
+            fontSize: 34
+        });
+    }
+
+    // 长情话：多行逐行浮现，仅当 1min 内未超上限时才显示
+    function tryLoveText(x, y) {
+        if (loveCountInMinute() >= MAX_LOVE_PER_MIN) return; // 超过 1min 2 次上限则跳过
+        recordLoveTime();
+        explodeLoveText(x, y);
+    }
+
     // 打出完整情话（多行，逐行绽放效果）
-    function explodeText(x, y) {
+    function explodeLoveText(x, y) {
         var lines = pickLoveLine();
         textBursts.push({
             x: x, y: y,
@@ -629,12 +713,12 @@
             alpha: 0,
             scale: 0.6,
             life: 0,
-            // 逐行浮现：每行错开一点时间
             lineStart: 0,
             fadeIn: 0.045,  // 渐显速度
             fadeOut: 0.02,  // 渐隐速度
             hold: 130,      // 停留帧数
-            maxLife: 180
+            maxLife: 180,
+            fontSize: 26
         });
     }
 
@@ -662,7 +746,7 @@
             ctx.globalAlpha = alpha;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.font = 'bold 26px "PingFang SC", "Microsoft YaHei", sans-serif';
+            ctx.font = 'bold ' + (tb.fontSize || 26) + 'px "PingFang SC", "Microsoft YaHei", sans-serif';
             ctx.shadowColor = '#ff9ff3';
             ctx.shadowBlur = 20;
 
@@ -684,14 +768,16 @@
         }
     }
 
-    // 确保情话 1 分钟至少出现一次：定时检查，到点就在屏幕上方打出一句
+    // 确保长情话 1 分钟至少出现一次、最多约 2 次：定时检查保底 + 频率上限
     function ensureLoveAppears(time) {
         var now = time; // ms
-        if (now - lastLoveTime >= LOVE_INTERVAL) {
+        // 距上次 ≥60s 且 1min 内 <2 次 → 保底触发
+        if (now - lastLoveTime >= LOVE_INTERVAL && loveCountInMinute() < MAX_LOVE_PER_MIN) {
             lastLoveTime = now;
             var lx = W * (0.3 + Math.random() * 0.4);
             var ly = H * (0.25 + Math.random() * 0.2);
-            explodeText(lx, ly);
+            recordLoveTime();
+            explodeLoveText(lx, ly);
             // 伴随一朵爱心烟花，呼应情话（更浪漫）
             scheduleExplode(150, lx, ly + 40, {
                 type: 1,
@@ -749,7 +835,7 @@
                     for (var h = 0; h < Math.round(1 + inten * 3); h++) spawnFallingHeart(r.x, r.y);
                 }
                 if (r.textBurst) {
-                    explodeText(r.x, r.y);
+                    explodeShortText(r.x, r.y);
                 }
                 rockets.splice(i, 1);
                 continue;
@@ -978,7 +1064,7 @@
     for (var n = 0; n < 3; n++) {
         setTimeout(launch, n * 400);
     }
-    lastLoveTime = performance.now() + 1000; // 首次情话在页面加载约 1s 后即可出现
+    lastLoveTime = performance.now() + 1000; // 首次长情话在页面加载约 1s 后即可出现
     nextLaunch = performance.now() + 1200;
     requestAnimationFrame(loop);
 
@@ -991,12 +1077,21 @@
         recordClick: recordClick,
         // 调试/测试：返回内部状态（粒子数、待触发效果数、激情）
         debug: function () {
+            var now = performance.now();
+            // 统计最近 1s 内实际爆炸的烟花效果数
+            var recent = 0;
+            for (var i = burstEffectLog.length - 1; i >= 0; i--) {
+                if (now - burstEffectLog[i] <= 1000) recent++;
+                else break;
+            }
             return {
                 particles: particles.length,
                 pending: pendingEffects.length,
                 rockets: rockets.length,
                 fallingHearts: fallingHearts.length,
-                passion: getPassion()
+                passion: getPassion(),
+                burstLast1s: recent,
+                loveCount1min: loveCountInMinute()
             };
         }
     };
