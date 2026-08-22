@@ -1,10 +1,13 @@
 /* ============================================================
- * 绚烂烟花 fireworks.js
+ * 绚烂烟花 fireworks.js (v2 · 激情系统增强版)
  *
  * 功能：
  *   - 深蓝夜空 + 闪烁星星背景
- *   - 自动持续发射烟花（圆形 / 心形 / 环状 / 爱心飘落）
- *   - 点击 / 触摸屏幕任意处，在点击位置绽放一朵烟花
+ *   - 自动持续发射烟花（圆形 / 心形 / 环状 / 玫瑰 / 螺旋 / 扇形 / 牡丹）
+ *   - 点击 / 触摸屏幕任意处绽放烟花
+ *   - 【激情系统】以 60 秒滑动窗口统计点击频率：
+ *     点击越频繁 → 烟花数量越多、越绚烂、越浪漫（含随机波动）
+ *   - 真实感增强：粒子大小分布、闪烁、核心爆光、二次爆裂 crackle
  *   - DPR 缩放 + 移动端粒子密度优化（参考 loveweb3 优化经验）
  *
  * 用法：
@@ -24,6 +27,9 @@
 
     // 粒子数量比例（移动端降低密度，保证流畅）
     var DENSITY = isMobile ? 0.6 : 1;
+
+    // 粒子总数上限（性能保护，防止连点导致粒子爆炸）
+    var MAX_PARTICLES = Math.round((isMobile ? 2000 : 5000) * DENSITY);
 
     // 夜空背景（带渐变）——每次渲染重绘背景，实现烟花拖尾
     function drawSky() {
@@ -84,111 +90,140 @@
     var particles = []; // 爆炸粒子
     var fallingHearts = []; // 飘落爱心
 
-    // 爆炸形状：0 圆形 / 1 心形 / 2 环状
-    function burstShape(type, baseAngle, total) {
-        var angles = [];
+    // 烟花形状：返回粒子角度/参数数组
+    // 0 圆形 | 1 心形 | 2 双层环 | 3 玫瑰花瓣 | 4 螺旋 | 5 扇形 | 6 千层牡丹
+    function shapePoints(type, total) {
+        var pts = [];
+        var i, t, a, r;
         switch (type) {
             case 0: // 圆形
-                for (var i = 0; i < total; i++) {
-                    angles.push((Math.PI * 2 * i) / total);
+                for (i = 0; i < total; i++) {
+                    pts.push({ a: (Math.PI * 2 * i) / total, d: 1 });
                 }
                 break;
-            case 1: { // 心形参数方程
-                for (var j = 0; j < total; j++) {
-                    var t = (Math.PI * 2 * j) / total;
-                    angles.push({ t: t, heart: true });
+            case 1: // 心形参数方程
+                for (i = 0; i < total; i++) {
+                    t = (Math.PI * 2 * i) / total;
+                    pts.push({ a: t, d: 1, heart: true });
                 }
                 break;
-            }
-            case 2: // 环状（两层同心环）
-                for (var k = 0; k < total; k++) {
-                    var a = (Math.PI * 2 * k) / total;
-                    angles.push({ t: a, ring: true, layer: k % 2 });
+            case 2: // 双层环（外环 + 反向内环，旋转感）
+                for (i = 0; i < total; i++) {
+                    a = (Math.PI * 2 * i) / total;
+                    if (i % 2 === 0) pts.push({ a: a, d: 1 });
+                    else pts.push({ a: -a + Math.PI, d: 0.7 });
+                }
+                break;
+            case 3: // 玫瑰花瓣（r = |cos(3θ)| 三瓣玫瑰）
+                for (i = 0; i < total; i++) {
+                    t = (Math.PI * 2 * i) / total;
+                    r = Math.abs(Math.cos(3 * t));
+                    pts.push({ a: t, d: Math.max(0.3, r) });
+                }
+                break;
+            case 4: // 螺旋（3 臂，半径随角度增长）
+                for (i = 0; i < total; i++) {
+                    t = (Math.PI * 2 * i) / total;
+                    var arms = 3;
+                    pts.push({ a: t * arms, d: (i / total) * 0.9 + 0.1 });
+                }
+                break;
+            case 5: // 扇形（孔雀开屏：一个角度扇区，半径略带差异）
+                for (i = 0; i < total; i++) {
+                    var spread = 1.7;
+                    a = -spread / 2 + (spread * i) / total;
+                    pts.push({ a: a, d: 0.55 + Math.random() * 0.55 });
+                }
+                break;
+            case 6: // 千层牡丹（3 层同心环，不同半径与相位）
+                for (i = 0; i < total; i++) {
+                    a = (Math.PI * 2 * i) / total;
+                    var layer = i % 3;
+                    pts.push({ a: a + layer * 0.18, d: [1, 0.72, 0.5][layer] });
                 }
                 break;
             default:
-                for (var m = 0; m < total; m++) {
-                    angles.push((Math.PI * 2 * m) / total);
+                for (i = 0; i < total; i++) {
+                    pts.push({ a: (Math.PI * 2 * i) / total, d: 1 });
                 }
         }
-        return angles;
+        return pts;
     }
 
-    // 爆炸一朵烟花
-    function explode(x, y) {
-        var type = Math.floor(Math.random() * 3);
-        var palette = randomPalette();
-        var baseColor = palette[Math.floor(Math.random() * palette.length)];
+    // 爆炸一朵烟花（真实感增强版）
+    // opts: { type, palette, scale(粒子倍率), speedScale, crackle(二次爆裂概率), glow(核心光强度) }
+    function explode(x, y, opts) {
+        opts = opts || {};
+        var type = opts.type !== undefined ? opts.type : Math.floor(Math.random() * 7);
+        var palette = opts.palette || randomPalette();
 
-        var total = Math.round((type === 2 ? 90 : 120) * DENSITY);
-        var speedBase = type === 0 ? (Math.random() * 1.2 + 2.6) : (Math.random() * 1 + 2.2);
-        var angles = burstShape(type, 0, total);
+        var total = Math.round((type === 2 || type === 6 ? 90 : 120) * DENSITY * (opts.scale || 1));
+        var speedBase = (Math.random() * 1.2 + 2.6) * (opts.speedScale || 1);
+        var pts = shapePoints(type, total);
+        var coreGlow = opts.glow || 1;
 
-        for (var i = 0; i < angles.length; i++) {
-            var ang = angles[i];
-            var vx, vy, speed = speedBase;
-            var startX = x, startY = y;
+        for (var i = 0; i < pts.length; i++) {
+            var ang = pts[i];
+            var speed = speedBase * ang.d;
             var life = Math.random() * 20 + 45;
+            var vx, vy;
 
-            if (typeof ang === 'object') {
-                if (ang.heart) {
-                    // 心形：x = 16sin^3(t), y = 13cos(t) - 5cos(2t) - 2cos(3t) - cos(4t)
-                    var t = ang.t;
-                    var hx = 16 * Math.pow(Math.sin(t), 3);
-                    var hy = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
-                    var len = Math.hypot(hx, hy) || 1;
-                    vx = (hx / len) * speed;
-                    vy = (hy / len) * speed;
-                } else if (ang.ring) {
-                    // 环状：外层正常圆、内层反向小圆（旋转感）
-                    var ra = ang.t;
-                    if (ang.layer === 0) {
-                        vx = Math.cos(ra) * speed;
-                        vy = Math.sin(ra) * speed;
-                    } else {
-                        vx = Math.cos(-ra + Math.PI) * speed * 0.75;
-                        vy = Math.sin(-ra + Math.PI) * speed * 0.75;
-                    }
-                } else {
-                    vx = Math.cos(ang.t) * speed;
-                    vy = Math.sin(ang.t) * speed;
-                }
+            if (ang.heart) {
+                // 心形：x = 16sin^3(t), y = 13cos(t) - 5cos(2t) - 2cos(3t) - cos(4t)
+                var t = ang.a;
+                var hx = 16 * Math.pow(Math.sin(t), 3);
+                var hy = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+                var len = Math.hypot(hx, hy) || 1;
+                vx = (hx / len) * speed;
+                vy = (hy / len) * speed;
             } else {
-                vx = Math.cos(ang) * speed;
-                vy = Math.sin(ang) * speed;
+                vx = Math.cos(ang.a) * speed;
+                vy = Math.sin(ang.a) * speed;
             }
 
-            // 粒子颜色：从调色板取，略带随机
             var color = palette[Math.floor(Math.random() * palette.length)];
 
-            particles.push({
-                x: startX,
-                y: startY,
-                vx: vx,
-                vy: vy,
-                gravity: 0.045,
+            // 粒子大小分布：约 70% 小粒子 + 30% 大粒子（更接近真实烟花）
+            var r = Math.random();
+            var size = r < 0.7 ? (Math.random() * 1 + 1.1) : (Math.random() * 2.4 + 2);
+
+            var p = {
+                x: x, y: y,
+                vx: vx, vy: vy,
+                gravity: 0.045 * (0.9 + Math.random() * 0.2),
                 friction: 0.985,
                 alpha: 1,
                 decay: Math.random() * 0.012 + 0.008,
                 life: life,
                 color: color,
-                size: Math.random() * 1.6 + 1.2,
+                size: size,
                 // 拖尾
-                trail: []
-            });
+                trail: [],
+                // 真实感增强
+                twinkle: Math.random() * Math.PI * 2,      // 闪烁相位
+                twinkleSpeed: Math.random() * 0.15 + 0.05, // 闪烁速度
+                twinkleAmt: Math.random() * 0.25 + 0.1,    // 闪烁幅度
+                crackle: opts.crackle && Math.random() < opts.crackle ? 1 : 0, // 二次爆裂
+                crackleTimer: 0,
+                core: false
+            };
+            pushParticle(p);
         }
 
-        // 中心闪光
-        particles.push({
+        // 中心爆闪（真实烟花核心：白色亮光 + 强光晕，随激情增强）
+        pushParticle({
             x: x, y: y, vx: 0, vy: 0, gravity: 0, friction: 1,
-            alpha: 1, decay: 0.03, life: 22, color: '#ffffff',
-            size: 6, trail: [], flash: true
+            alpha: 1, decay: 0.028, life: 20, color: '#ffffff',
+            size: 5 * coreGlow, trail: [], flash: true, core: true,
+            twinkle: 0, twinkleSpeed: 0, twinkleAmt: 0,
+            crackle: 0, crackleTimer: 1
         });
     }
 
-    // 发射一枚火箭（从底部随机位置升起）
-    function launch() {
-        var targetY = H * (0.15 + Math.random() * 0.35);
+    // 发射一枚火箭（从底部随机位置升起）；intensity 记录激情强度，决定爆炸绚烂度
+    function launch(intensity) {
+        intensity = intensity || 0;
+        var targetY = H * (0.12 + Math.random() * 0.35);
         var x = W * (0.15 + Math.random() * 0.7);
         var targetX = x + (Math.random() * 160 - 80);
         var dy = H - targetY;
@@ -202,7 +237,8 @@
             vy: -(Math.random() * 2 + 7.5),
             targetX: targetX,
             targetY: targetY,
-            trail: []
+            trail: [],
+            intensity: intensity
         });
     }
 
@@ -237,6 +273,118 @@
         ctx.bezierCurveTo(16, -6, 8, 0, 0, 5);
         ctx.fill();
         ctx.restore();
+    }
+
+    // ============ 激情系统（60 秒滑动窗口点击统计） ============
+    var clickTimes = [];
+    var MAX_CPM = 30; // 每分钟 30 次点击视为满激情
+
+    // 记录一次点击（供 60s 窗口统计）
+    function recordClick() {
+        var now = performance.now();
+        clickTimes.push(now);
+        while (clickTimes.length && now - clickTimes[0] > 60000) clickTimes.shift();
+    }
+
+    // 当前激情 0~1（60s 滑动窗口内点击率）
+    function getPassion() {
+        var now = performance.now();
+        while (clickTimes.length && now - clickTimes[0] > 60000) clickTimes.shift();
+        return Math.min(1, clickTimes.length / MAX_CPM);
+    }
+
+    // 粒子入队（性能保护：超过上限丢弃新粒子）
+    function pushParticle(p) {
+        if (particles.length >= MAX_PARTICLES) return false;
+        particles.push(p);
+        return true;
+    }
+
+    // 根据激情挑选更绚烂的形状（高激情偏向复杂绚丽造型）
+    function pickType(p) {
+        if (p > 0.7) {
+            // 高激情：心形 / 玫瑰 / 螺旋 / 牡丹
+            return [1, 3, 4, 6][Math.floor(Math.random() * 4)];
+        } else if (p > 0.35) {
+            // 中激情：混合
+            return [0, 1, 2, 3, 4, 6][Math.floor(Math.random() * 6)];
+        } else {
+            // 低激情：基础圆形 / 心形 / 环状
+            return [0, 1, 2][Math.floor(Math.random() * 3)];
+        }
+    }
+
+    // ============ 点击爆炸组合（数量 / 绚烂 / 浪漫随激情变化） ============
+    function explodeBurst(x, y) {
+        recordClick();
+        var p = getPassion();
+
+        // 随机波动：每次点击效果在 ±20% 内浮动
+        var jitter = 0.8 + Math.random() * 0.4;
+        var pj = Math.min(1, p * jitter);
+
+        // 主烟花数量：低激情 1 朵 → 高激情 2~3 朵
+        var mainCount = 1 + Math.floor(Math.random() * (1 + Math.round(p * 2)));
+        // 卫星烟花数量：低激情 0 → 高激情 2~6 朵（环绕主烟花）
+        var satCount = Math.round(p * (2 + Math.random() * 4));
+
+        var particleScale = 1 + p * 0.9 + Math.random() * 0.3;
+        var speedScale = 1 + p * 0.35 + Math.random() * 0.2;
+        var crackleChance = p * 0.35;
+        var glow = 1 + p * 1.2 + Math.random() * 0.3;
+        var heartChance = 0.15 + p * 0.45;
+        var textChance = 0.08 + p * 0.6;
+        var heartCount = Math.round(1 + p * 6 + Math.random() * 3);
+
+        // 主烟花（多个时错开一点位置，组合更立体）
+        for (var m = 0; m < mainCount; m++) {
+            var mx = x + (Math.random() * 70 - 35);
+            var my = y + (Math.random() * 50 - 25);
+            explode(mx, my, {
+                type: pickType(pj),
+                scale: particleScale / Math.sqrt(Math.max(1, mainCount)),
+                speedScale: speedScale,
+                crackle: crackleChance,
+                glow: glow,
+                palette: randomPalette()
+            });
+        }
+
+        // 卫星烟花：环绕点击点一周，如喷泉喷涌
+        if (satCount > 0) {
+            for (var s = 0; s < satCount; s++) {
+                var ang = (Math.PI * 2 * s) / satCount + Math.random() * 0.5;
+                var dist = 70 + Math.random() * 70;
+                var sx = x + Math.cos(ang) * dist;
+                var sy = y + Math.sin(ang) * dist * 0.7;
+                explode(sx, sy, {
+                    type: pickType(pj),
+                    scale: (0.5 + pj * 0.5) * (0.7 + Math.random() * 0.5),
+                    speedScale: speedScale * 0.9,
+                    crackle: crackleChance * 0.6,
+                    glow: glow * 0.7,
+                    palette: randomPalette()
+                });
+            }
+        }
+
+        // 浪漫度：飘落爱心（数量随激情）
+        if (Math.random() < heartChance) {
+            for (var h = 0; h < heartCount; h++) spawnFallingHeart(x, y);
+        }
+
+        // 文字祝福（概率随激情）
+        if (Math.random() < textChance) {
+            explodeText(x, y);
+        }
+
+        // 震感随激情增强（支持的设备）
+        if (navigator.vibrate) {
+            try {
+                if (p > 0.6) navigator.vibrate([30, 40, 50]);
+                else navigator.vibrate(20);
+            } catch (e) { /* 忽略 */ }
+        }
     }
 
     // ============ 主循环 ============
@@ -289,12 +437,13 @@
     }
 
     function update(dt, time) {
-        // 自动发射
+        // 自动发射（激情越高，发射越频繁、越绚烂）
         if (time > nextLaunch) {
-            launch();
-            nextLaunch = time + autoLaunchInterval * (0.6 + Math.random() * 0.8);
-            // 每 3~5 朵烟花，顺带打一个文字祝福
-            if (Math.random() < 0.35) {
+            var passion = getPassion();
+            launch(passion);
+            nextLaunch = time + autoLaunchInterval * (0.6 + Math.random() * 0.8) * (1 - passion * 0.5);
+            // 每 2~4 朵烟花，顺带打一个文字祝福（概率随激情）
+            if (Math.random() < (0.3 + passion * 0.4)) {
                 var last = rockets[rockets.length - 1];
                 // 记录标记：这枚火箭爆炸后显示文字
                 if (last) last.textBurst = true;
@@ -310,12 +459,20 @@
             r.x += r.vx;
             r.y += r.vy;
 
-            // 到达目标附近 → 爆炸
+            // 到达目标附近 → 爆炸（自动烟花的绚烂度也随激情提升）
             if (Math.abs(r.x - r.targetX) < 10 && Math.abs(r.y - r.targetY) < 12) {
-                explode(r.x, r.y);
-                // 偶尔飘落爱心 + 文字
-                if (Math.random() < 0.4) {
-                    for (var h = 0; h < 3; h++) spawnFallingHeart(r.x, r.y);
+                var inten = r.intensity || 0;
+                explode(r.x, r.y, {
+                    type: pickType(inten),
+                    scale: 1 + inten * 0.5 + Math.random() * 0.2,
+                    speedScale: 1 + inten * 0.25,
+                    crackle: inten * 0.25,
+                    glow: 1 + inten * 0.8,
+                    palette: randomPalette()
+                });
+                // 偶尔飘落爱心 + 文字（概率随激情）
+                if (Math.random() < (0.3 + inten * 0.4)) {
+                    for (var h = 0; h < Math.round(1 + inten * 3); h++) spawnFallingHeart(r.x, r.y);
                 }
                 if (r.textBurst) {
                     explodeText(r.x, r.y);
@@ -337,6 +494,32 @@
             if (pt.life <= 0) {
                 particles.splice(p, 1);
                 continue;
+            }
+
+            // 二次爆裂（crackle）：生命后期爆出一圈金色小星火（真实烟花的沙沙尾声）
+            if (pt.crackle && pt.crackleTimer === 0 && pt.life < 24 && pt.life > 16) {
+                pt.crackleTimer = 1;
+                var n = 8;
+                for (var c = 0; c < n; c++) {
+                    var ca = (Math.PI * 2 * c) / n + Math.random() * 0.4;
+                    var cs = Math.random() * 1.6 + 0.5;
+                    pushParticle({
+                        x: pt.x, y: pt.y,
+                        vx: Math.cos(ca) * cs,
+                        vy: Math.sin(ca) * cs,
+                        gravity: 0.03,
+                        friction: 0.97,
+                        alpha: 1,
+                        decay: 0.04,
+                        life: 18,
+                        color: Math.random() > 0.5 ? '#ffd700' : '#fff3bf',
+                        size: 1,
+                        trail: [],
+                        twinkle: 0, twinkleSpeed: 0.1, twinkleAmt: 0.3,
+                        crackle: 0, crackleTimer: 1,
+                        spark: true
+                    });
+                }
             }
 
             // 拖尾
@@ -388,9 +571,17 @@
             ctx.fill();
         }
 
-        // 爆炸粒子（含拖尾）
+        // 爆炸粒子（含拖尾、闪烁、核心光）
+        var timeS = performance.now() / 1000;
         for (var p = 0; p < particles.length; p++) {
             var pt = particles[p];
+
+            // 闪烁：粒子明暗微波动（更真实）
+            var flicker = 1;
+            if (pt.twinkleAmt > 0) {
+                flicker = 1 - pt.twinkleAmt / 2 + (pt.twinkleAmt / 2) * Math.sin(pt.twinkle + timeS * pt.twinkleSpeed * 60);
+            }
+            var a = pt.alpha * flicker;
 
             // 拖尾光带
             for (var k = 0; k < pt.trail.length; k++) {
@@ -398,7 +589,15 @@
                 var ratio = (k + 1) / pt.trail.length;
                 ctx.beginPath();
                 ctx.arc(trk.x, trk.y, pt.size * ratio * 0.7, 0, Math.PI * 2);
-                ctx.fillStyle = hexToRgba(pt.color, pt.alpha * ratio * 0.5);
+                ctx.fillStyle = hexToRgba(pt.color, a * ratio * 0.5);
+                ctx.fill();
+            }
+
+            // 核心粒子（爆炸中心）：更强的白色光晕
+            if (pt.core) {
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, pt.size * 5, 0, Math.PI * 2);
+                ctx.fillStyle = hexToRgba('#ffffff', a * 0.18);
                 ctx.fill();
             }
 
@@ -406,16 +605,17 @@
             ctx.beginPath();
             ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
             if (pt.flash) {
-                ctx.fillStyle = hexToRgba('#ffffff', pt.alpha);
+                ctx.fillStyle = hexToRgba('#ffffff', a);
             } else {
-                ctx.fillStyle = hexToRgba(pt.color, pt.alpha);
+                ctx.fillStyle = hexToRgba(pt.color, a);
             }
             ctx.fill();
 
             // 光晕
+            var glowMul = pt.core ? 4 : 2.6;
             ctx.beginPath();
-            ctx.arc(pt.x, pt.y, pt.size * 2.6, 0, Math.PI * 2);
-            ctx.fillStyle = hexToRgba(pt.color, pt.alpha * 0.16);
+            ctx.arc(pt.x, pt.y, pt.size * glowMul, 0, Math.PI * 2);
+            ctx.fillStyle = hexToRgba(pt.color, a * 0.16);
             ctx.fill();
         }
 
@@ -471,14 +671,8 @@
 
     // ============ 交互：点击 / 触摸绽放烟花 ============
     function handlePointer(x, y) {
-        explode(x, y);
-        if (Math.random() < 0.5) {
-            for (var i = 0; i < 3; i++) spawnFallingHeart(x, y);
-        }
-        // 触发一次小震感（支持的设备）
-        if (navigator.vibrate) {
-            try { navigator.vibrate(20); } catch (e) { /* 忽略 */ }
-        }
+        // 随激情与随机绽放一簇绚烂烟花（数量 / 绚烂 / 浪漫均随点击频率变化）
+        explodeBurst(x, y);
     }
 
     // 优先 PointerEvent，避免移动端 click+touch 双触发
@@ -513,5 +707,11 @@
     requestAnimationFrame(loop);
 
     // 暴露接口（调试用）
-    global.Fireworks = { launch: launch, explode: explode };
+    global.Fireworks = {
+        launch: launch,
+        explode: explode,
+        explodeBurst: explodeBurst,
+        getPassion: getPassion,
+        recordClick: recordClick
+    };
 })(window);
