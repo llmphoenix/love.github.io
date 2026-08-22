@@ -9,20 +9,45 @@
  *
  * 功能：
  *   - 页面加载后循环播放主题环境音（音量低，营造氛围）
- *   - 浏览器自动播放被拦截时，首次用户交互后自动启动
- *   - 与背景音乐、对白共存（环境音较安静）
+ *   - 使用 Web Audio API（AudioContext），手机上比 <audio> 更可靠：
+ *     浏览器自动播放限制下，首次用户交互 resume() 后即可播放，
+ *     且可与背景音乐/对白同时共存
+ *   - 对白播放时略微降低环境音（避免干扰），播完恢复
  * ============================================================ */
 (function (global) {
     'use strict';
 
-    var audio = null;
+    var ctx = null;
+    var source = null;
+    var gain = null;
+    var buffer = null;
     var started = false;
+    var baseVolume = 0.5;
+
+    function createContext() {
+        var AC = global.AudioContext || global.webkitAudioContext;
+        if (!AC) return null;
+        try {
+            return new AC();
+        } catch (e) {
+            return null;
+        }
+    }
 
     function start() {
-        if (started || !audio) return;
+        if (!ctx || !buffer || started) return;
+        // 首次交互时 resume 音频上下文（解锁自动播放限制）
+        if (ctx.state === 'suspended') {
+            ctx.resume().catch(function () { /* 忽略 */ });
+        }
+        // 创建循环音源
+        source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.loop = true;
+        source.connect(gain);
+        gain.gain.value = baseVolume;
+        source.start(0);
         started = true;
-        var p = audio.play();
-        if (p && p.catch) p.catch(function () { /* 忽略 */ });
     }
 
     function init(opts) {
@@ -31,40 +56,64 @@
         var audioDir = opts.audioDir || 'audio/env';
         if (!file) return;
 
-        audio = new Audio();
-        audio.loop = true;
-        audio.preload = 'auto';
-        audio.volume = opts.volume || 0.35;
-        audio.setAttribute('data-env', '1');
-        audio.src = audioDir + '/' + file;
-        // 挂到 DOM，确保被 GC 前可靠播放
-        if (document.body) {
-            document.body.appendChild(audio);
-        }
+        baseVolume = opts.volume || 0.5;
+        ctx = createContext();
+        if (!ctx) return;
 
-        // 尝试自动播放
-        start();
+        gain = ctx.createGain();
+        gain.gain.value = baseVolume;
+        gain.connect(ctx.destination);
+
+        // 预加载并解码环境音
+        var url = audioDir + '/' + file;
+        var req = new XMLHttpRequest();
+        req.open('GET', url, true);
+        req.responseType = 'arraybuffer';
+        req.onload = function () {
+            ctx.decodeAudioData(req.response, function (decoded) {
+                buffer = decoded;
+                // 尝试自动播放（桌面通常可以）
+                start();
+            }, function () { /* 解码失败 */ });
+        };
+        req.onerror = function () { /* 加载失败 */ };
+        req.send();
 
         // 首次用户交互兜底（覆盖浏览器自动播放限制）
+        // 注意：不能 once，若首次交互仍未解锁，需多次交互重试
         var tryStart = function () {
             start();
         };
-        document.addEventListener('click', tryStart, { once: true });
-        document.addEventListener('touchstart', tryStart, { once: true });
-        document.addEventListener('keydown', tryStart, { once: true });
+        document.addEventListener('click', tryStart);
+        document.addEventListener('pointerup', tryStart);
+        document.addEventListener('touchstart', tryStart);
+        document.addEventListener('touchend', tryStart);
+        document.addEventListener('keydown', tryStart);
 
         // 对白播放时略微降低环境音（避免干扰），播完恢复
         global.addEventListener('voice-overlay', function (e) {
-            if (!audio) return;
+            if (!gain) return;
+            var target = baseVolume;
             if (e.detail && e.detail.paused) {
-                audio.volume = (opts.volume || 0.35) * 0.4;
-            } else {
-                audio.volume = opts.volume || 0.35;
+                target = baseVolume * 0.4;
             }
+            // 平滑过渡音量
+            gain.gain.linearRampToValueAtTime(target, ctx.currentTime + 0.3);
         });
     }
 
     global.EnvPlayer = {
-        init: init
+        init: init,
+        // 调试：返回内部状态
+        debug: function () {
+            return {
+                hasCtx: !!ctx,
+                ctxState: ctx ? ctx.state : 'none',
+                hasBuffer: !!buffer,
+                started: started,
+                gain: gain ? gain.gain.value : 0,
+                baseVolume: baseVolume
+            };
+        }
     };
 })(window);
