@@ -384,16 +384,16 @@
                 font-size: clamp(1.1rem, 3vw, 1.5rem);
             }
 
-            /* 六个子页面按钮整体缩小（更紧凑的横向排列） */
+            /* 九个子页面：横屏用 3 列两排（更宽裕，避免太挤） */
             .nav-cards {
-                grid-template-columns: repeat(6, 1fr);
-                gap: 5px;
-                max-width: 780px;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+                max-width: 620px;
             }
 
             .nav-card {
-                padding: 10px 8px;
-                border-radius: 14px;
+                padding: 8px 6px;
+                border-radius: 12px;
             }
 
             .card-icon {
@@ -491,6 +491,21 @@
                 <span class="card-icon">🌊</span>
                 <div class="card-title">海洋之心</div>
                 <div class="card-desc">深海沉溺，爱你入骨</div>
+            </a>
+            <a href="html/loveweb7/index.html" class="nav-card">
+                <span class="card-icon">🌙</span>
+                <div class="card-title">月下柔情</div>
+                <div class="card-desc">月色温柔，最是长情</div>
+            </a>
+            <a href="html/loveweb8/index.html" class="nav-card">
+                <span class="card-icon">☁️</span>
+                <div class="card-title">云端之恋</div>
+                <div class="card-desc">云端之上，与你共舞</div>
+            </a>
+            <a href="html/loveweb9/index.html" class="nav-card">
+                <span class="card-icon">❄️</span>
+                <div class="card-title">落雪誓言</div>
+                <div class="card-desc">共白首，不负卿</div>
             </a>
         </div>
 
