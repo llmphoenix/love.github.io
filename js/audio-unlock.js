@@ -12,6 +12,7 @@
  *   - 首次进入页面无手势 → 背景音乐/环境音/对白都被拦截
  *   - 本模块监听页面第一次真实用户手势（pointerdown 最早），
  *     统一解锁：恢复背景音乐(MusicPlayer.play) + 启动环境音(EnvPlayer.unlock)
+ *             + 解锁对白播放器(VoicePlayer.unlock)
  *   - 之后任意点击都会再次尝试（幂等，已启动则跳过）
  * ============================================================ */
 (function (global) {
@@ -35,6 +36,11 @@
         // 2. 启动环境音（若未启动）
         if (global.EnvPlayer && typeof global.EnvPlayer.unlock === 'function') {
             try { global.EnvPlayer.unlock(); } catch (e) { /* 忽略 */ }
+        }
+
+        // 3. 解锁对白播放器（确保其 AudioContext 可用并预载对白）
+        if (global.VoicePlayer && typeof global.VoicePlayer.unlock === 'function') {
+            try { global.VoicePlayer.unlock(); } catch (e) { /* 忽略 */ }
         }
     }
 

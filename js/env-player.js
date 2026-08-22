@@ -182,6 +182,10 @@
         unlock: function () {
             start();
         },
+        // 共享 AudioContext（供对白等复用，避免多个 context）
+        getContext: function () {
+            return ctx;
+        },
         // 调试：返回内部状态
         debug: function () {
             return {
