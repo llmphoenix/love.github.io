@@ -37,8 +37,9 @@ os.makedirs(AUDIO_DIR, exist_ok=True)
 os.makedirs(ENV_DIR, exist_ok=True)
 
 FEMALE_VOICE = 'zh-CN-XiaoxiaoNeural'
-MALE_VOICE = 'zh-CN-YunxiNeural'
-RATE = '+6%'
+MALE_VOICE = 'zh-CN-YunjianNeural'
+RATE = '+0%'
+PITCH = '+0Hz'
 GAP_SEC = 0.4  # 对话句间停顿（秒）
 
 # =====================================================================
@@ -196,7 +197,7 @@ def mp3_to_pcm(path):
     return list(audio.samples)
 
 
-def pcm_to_mp3(samples, path, rate=24000):
+def pcm_to_mp3(samples, path, rate=44100):
     """PCM → mp3（lameenc）"""
     pcm = []
     for v in samples:
@@ -230,7 +231,7 @@ async def gen_dialogue(tmpdir, key, lines):
 # =====================================================================
 # 环境音合成（纯程序生成，无版权）
 # =====================================================================
-SR = 24000
+SR = 44100
 
 def white_noise(n):
     return [random.uniform(-1, 1) for _ in range(n)]
@@ -265,24 +266,31 @@ def normalize(samples, peak=0.7):
 
 
 def gen_fireworks_env():
-    """烟花绽放：多个爆裂脉冲 + 嘶嘶尾音"""
-    dur = 3.0
+    """烟花绽放：多次爆裂轰鸣 + 嘶嘶尾音 + 余音（更真实响亮）"""
+    dur = 6.0
     n = int(dur * SR)
     out = [0.0] * n
-    # 爆裂瞬间（低频轰鸣）
-    for _ in range(6):
+    # 多次爆裂（低频轰鸣 + 高频爆响）
+    for _ in range(10):
         pos = random.randint(0, n - 1)
-        burst = white_noise(4000)
-        burst = lowpass(burst, 0.4)
-        for i in range(len(burst)):
+        burst = white_noise(5000)
+        # 低频轰鸣（加重）
+        low = lowpass(burst, 0.25)
+        for i in range(len(low)):
             idx = pos + i
             if idx < n:
-                out[idx] += burst[i] * math.exp(-i / 1200.0)
-    # 嘶嘶尾音
-    hiss = lowpass(white_noise(n), 0.6)
+                out[idx] += low[i] * math.exp(-i / 2500.0) * 0.9
+        # 高频爆响
+        high = lowpass(white_noise(3000), 0.6)
+        for i in range(len(high)):
+            idx = pos + i
+            if idx < n:
+                out[idx] += high[i] * math.exp(-i / 800.0) * 0.5
+    # 嘶嘶尾音（持续）
+    hiss = lowpass(white_noise(n), 0.7)
     for i in range(n):
-        out[i] += hiss[i] * math.exp(-i / (n * 0.6)) * 0.3
-    return normalize(apply_envelope(out, 0.02, 0.8))
+        out[i] += hiss[i] * math.exp(-i / (n * 0.5)) * 0.35
+    return normalize(apply_envelope(out, 0.01, 0.6), peak=0.9)
 
 
 def gen_forest_summer_env():

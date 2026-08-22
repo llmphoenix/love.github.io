@@ -32,8 +32,8 @@
     // 记录上次播放（type, index），用于不重复
     var lastPick = null;
 
-    // 对白播放节流：间隔 > 2.5s 才触发
-    var MIN_INTERVAL = 2500;
+    // 对白播放节流：间隔 > 0.6s 才触发（每次点击都播放，仅防极速连点重叠）
+    var MIN_INTERVAL = 600;
 
     // 随机选一段，尽量不与上次重复（类型 + 序号都避免连续相同）
     function pickDialogue() {

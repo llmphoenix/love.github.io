@@ -34,7 +34,7 @@
         audio = new Audio();
         audio.loop = true;
         audio.preload = 'auto';
-        audio.volume = opts.volume || 0.2;
+        audio.volume = opts.volume || 0.35;
         audio.setAttribute('data-env', '1');
         audio.src = audioDir + '/' + file;
         // 挂到 DOM，确保被 GC 前可靠播放
@@ -57,9 +57,9 @@
         global.addEventListener('voice-overlay', function (e) {
             if (!audio) return;
             if (e.detail && e.detail.paused) {
-                audio.volume = (opts.volume || 0.2) * 0.4;
+                audio.volume = (opts.volume || 0.35) * 0.4;
             } else {
-                audio.volume = opts.volume || 0.2;
+                audio.volume = opts.volume || 0.35;
             }
         });
     }
