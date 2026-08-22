@@ -178,6 +178,10 @@
 
     global.EnvPlayer = {
         init: init,
+        // 强制解锁并启动环境音（供统一音频解锁调用）
+        unlock: function () {
+            start();
+        },
         // 调试：返回内部状态
         debug: function () {
             return {

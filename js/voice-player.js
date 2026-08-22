@@ -36,8 +36,10 @@
     var musicDuckCount = 0;
     // 对白播放前背景音乐的原始音量（首个对白播放时记录）
     var musicOriginalVolume = 1.0;
-    // 对白播放时背景音乐的压低音量（混合播放：音乐小声但不停）
-    var DUCK_VOLUME = 0.15;
+    // 对白播放时背景音乐的压低音量（混合播放：音乐小声但清晰可闻）
+    var DUCK_VOLUME = 0.4;
+    // 上一个对白的兜底定时器（切换对白时清除，避免叠加）
+    var lastSafetyTimer = null;
 
     // 对白播放节流：间隔 > 0.6s 才触发（每次点击都播放，仅防极速连点重叠）
     var MIN_INTERVAL = 600;
@@ -96,6 +98,12 @@
 
         var fname = pickDialogue();
 
+        // 清除上一个对白的兜底定时器（避免叠加多次恢复）
+        if (lastSafetyTimer) {
+            clearTimeout(lastSafetyTimer);
+            lastSafetyTimer = null;
+        }
+
         // 压低背景音乐音量（混合播放：音乐继续但不打扰对白）
         duckMusic();
 
@@ -127,17 +135,17 @@
             global.dispatchEvent(new CustomEvent('voice-overlay', { detail: { paused: false } }));
         };
 
-        // 兜底：无论对白是否正常结束，6 秒后强制恢复背景音乐音量与环境音
-        // （防止 onended 在某些情况下不触发导致音乐一直压低）
-        var safetyTimer = setTimeout(function () {
+        // 兜底：对白最长约 5 秒，6 秒后强制恢复（防止 onended 在手机上不触发）
+        lastSafetyTimer = setTimeout(function () {
+            lastSafetyTimer = null;
             unduckMusic();
             global.dispatchEvent(new CustomEvent('voice-overlay', { detail: { paused: false } }));
         }, 6000);
         audio.ontimeupdate = function () {
             // 对白播完后清除兜底定时器（已通过 onended 恢复）
-            if (audio.ended && safetyTimer) {
-                clearTimeout(safetyTimer);
-                safetyTimer = null;
+            if (audio.ended && lastSafetyTimer) {
+                clearTimeout(lastSafetyTimer);
+                lastSafetyTimer = null;
             }
         };
     }

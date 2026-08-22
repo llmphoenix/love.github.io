@@ -27,9 +27,11 @@
     <!-- 统一背景音乐播放器（随机播放，跨页面延续） -->
     <script src="../../js/music-player.js?v=20260822-v3"></script>
     <!-- 爱情对白播放器（点击屏幕播放男声/女声对白） -->
-    <script src="../../js/voice-player.js?v=20260822-v3"></script>
+    <script src="../../js/voice-player.js?v=20260822-v4"></script>
     <!-- 主题环境音播放器（低音量循环） -->
-    <script src="../../js/env-player.js?v=20260822-v2"></script>
+    <script src="../../js/env-player.js?v=20260822-v3"></script>
+    <!-- 统一音频解锁（首次交互时启动背景音乐+环境音） -->
+    <script src="../../js/audio-unlock.js?v=20260822"></script>
     <script>
         // 背景音乐（随机播放，逻辑统一在 js/music-player.js）
         MusicPlayer.init({ audioDir: '../../audio', buttonId: 'musicBtn' });
@@ -37,6 +39,8 @@
         VoicePlayer.init({ theme: 'ocean', canvasId: 'ocean', audioDir: '../../audio/voices', variants: { f: 2, m: 2, b: 2 } });
         // 环境音（海浪声）
         EnvPlayer.init({ file: 'ocean_waves.mp3', audioDir: '../../audio/env' });
+        // 首次交互时统一解锁所有音频（覆盖浏览器自动播放限制）
+        AudioUnlock.init();
     </script>
 </body>
 </html>
