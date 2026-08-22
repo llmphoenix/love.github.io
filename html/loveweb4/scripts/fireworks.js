@@ -29,7 +29,100 @@
     var DENSITY = isMobile ? 0.6 : 1;
 
     // 粒子总数上限（性能保护，防止连点导致粒子爆炸）
-    var MAX_PARTICLES = Math.round((isMobile ? 2000 : 5000) * DENSITY);
+    // ===== 动态粒子稀释系统（根据平台硬件与实时 FPS 自动降载） =====
+    // 硬件档位评估：内存 + CPU 核心 + 屏幕面积 + DPR → 基准粒子预算档位
+    function detectHardwareTier() {
+        var mem = (navigator.deviceMemory || 4) * 1;      // GB，默认 4
+        var cores = (navigator.hardwareConcurrency || 4) * 1; // 默认 4
+        var screenArea = (window.innerWidth * window.innerHeight) || (1280 * 800);
+        var dprCap = Math.min(window.devicePixelRatio || 1, 2);
+
+        // 综合评分：内存贡献 + 核心贡献 + 屏幕面积负担 - DPR 负担
+        var memScore = Math.min(1, mem / 8);
+        var coreScore = Math.min(1, cores / 8);
+        var areaFactor = Math.min(1.2, Math.max(0.7, 1280 * 800 / screenArea));
+        var dprPenalty = dprCap > 1.5 ? 0.85 : (dprCap > 1 ? 1 : 1.1);
+        var score = (memScore * 0.5 + coreScore * 0.5) * areaFactor * dprPenalty;
+        return score; // 0.35 ~ 1.2
+    }
+    var HARDWARE_SCORE = detectHardwareTier();
+
+    // 每像素粒子密度预算（基于硬件评分，移动端再打折）
+    var BASE_PX_BUDGET = 4; // 每 10000 px² 允许的粒子数基准
+    function computeMaxParticles() {
+        var area = (W * H) || (1280 * 800);
+        var budget = Math.round((area / 10000) * BASE_PX_BUDGET * HARDWARE_SCORE);
+        // 钳制到合理范围：低端 ~800，中端 ~2500，高端 ~6000
+        var minP = isMobile ? 700 : 1000;
+        var maxP = isMobile ? 2600 : 6500;
+        return Math.max(minP, Math.min(maxP, Math.round(budget)));
+    }
+    var MAX_PARTICLES = computeMaxParticles();
+
+    // 实时粒子预算（随 FPS 动态调整；MAX_PARTICLES 为硬上限）
+    var particleBudget = MAX_PARTICLES;
+    // 稀释系数 0.25~1.0：越小 → 生成的粒子越少（粒子数稀释）
+    var dilutionFactor = 1.0;
+
+    // FPS 监控：每 500ms 采样一次实际帧率，驱动稀释
+    var fpsWindow = [];
+    var lastFpsTime = 0;
+    var lastFpsCheck = 0;
+    var FPS_CHECK_INTERVAL = 500;      // 每 500ms 评估
+    var FPS_LOW = 45;                  // 低于此 → 稀释降载
+    var FPS_OK = 55;                   // 高于此 → 缓慢恢复
+    var DILUTE_MIN = 0.25;             // 最低稀释到 25% 粒子
+    var DILUTE_STEP_DOWN = 0.82;       // 每档降载乘数
+    var DILUTE_STEP_UP = 1.12;         // 每档恢复乘数
+
+    // 主循环中每帧更新 FPS 采样与稀释
+    function updateDilution(time) {
+        // FPS 采样
+        if (lastFpsTime) {
+            var frameMs = time - lastFpsTime;
+            if (frameMs > 0) fpsWindow.push(1000 / frameMs);
+            if (fpsWindow.length > 30) fpsWindow.shift();
+        }
+        lastFpsTime = time;
+
+        // 每 500ms 评估一次
+        if (time - lastFpsCheck < FPS_CHECK_INTERVAL) return;
+        lastFpsCheck = time;
+
+        var avg = 0;
+        for (var i = 0; i < fpsWindow.length; i++) avg += fpsWindow[i];
+        if (fpsWindow.length) avg /= fpsWindow.length;
+        fpsWindow = [];
+
+        if (avg < FPS_LOW) {
+            // 卡顿 → 稀释降载
+            dilutionFactor = Math.max(DILUTE_MIN, dilutionFactor * DILUTE_STEP_DOWN);
+            particleBudget = Math.max(200, Math.round(MAX_PARTICLES * dilutionFactor));
+            // 立即清理多余粒子（被动降载）
+            if (particles.length > particleBudget) {
+                particles.splice(0, particles.length - particleBudget);
+            }
+        } else if (avg > FPS_OK && dilutionFactor < 1) {
+            // 流畅 → 缓慢恢复
+            dilutionFactor = Math.min(1, dilutionFactor * DILUTE_STEP_UP);
+            particleBudget = Math.round(MAX_PARTICLES * dilutionFactor);
+        } else if (dilutionFactor >= 1) {
+            particleBudget = MAX_PARTICLES;
+        }
+    }
+
+    // 粒子入队（动态稀释：超预算时按超出比例抽样丢弃，越超丢得越多，平滑降载）
+    function pushParticle(p) {
+        if (particles.length >= particleBudget) {
+            // 超出预算比例越高，丢弃概率越高（平滑稀释，而非硬丢弃）
+            var overRatio = (particles.length - particleBudget + 1) / particleBudget;
+            var dropProb = Math.min(0.85, overRatio);
+            if (Math.random() < dropProb) return false;
+        }
+        if (particles.length >= MAX_PARTICLES) return false; // 硬上限仍保护
+        particles.push(p);
+        return true;
+    }
 
     // 夜空背景（带渐变）——每次渲染重绘背景，实现烟花拖尾
     function drawSky() {
@@ -304,7 +397,8 @@
         if (type === 13) baseTotal = 100;  // 亮环：细密
         if (type === 8 || type === 10) baseTotal = 110; // 水母/垂柳
         if (type === 9) baseTotal = 60;    // 彗星：集中喷射
-        var total = Math.round(baseTotal * DENSITY * (opts.scale || 1));
+        // 粒子数稀释：乘实时稀释系数（硬件卡顿时自动减少每朵烟花的粒子）
+        var total = Math.round(baseTotal * DENSITY * (opts.scale || 1) * dilutionFactor);
 
         var speedBase = (Math.random() * 1.2 + 2.6) * (opts.speedScale || 1);
         // 垂柳/彗星用略低的初速，靠重力形成垂坠
@@ -346,6 +440,8 @@
             if (ang.willow) { gravity *= 1.5; friction *= 0.99; extraTrail = 9; size *= 0.8; } // 垂柳：强重力下坠 + 长丝
             if (ang.comet) { gravity *= 0.4; friction *= 0.99; extraTrail = 12; size *= 1.4; } // 彗星：长亮尾
             if (ang.ringThin) { size *= 0.85; extraTrail = 5; } // 亮环：细密小粒子
+            // 拖尾随稀释缩短（减少每帧拖尾光带绘制数）
+            extraTrail = Math.max(2, Math.round(extraTrail * (0.5 + dilutionFactor * 0.5)));
 
             var p = {
                 x: x, y: y,
@@ -525,10 +621,10 @@
         // 卫星烟花数量：低激情 0 → 高激情 2~6 朵（受上限约束）
         var satCount = Math.round(p * (2 + Math.random() * 4));
 
-        // 【性能约束】1s 内总烟花效果数控制在 2~5 个（移动端 ≤4）
-        // 先满足主烟花，多余额度给卫星烟花
+        // 【性能约束】1s 内总烟花效果数控制在 2~5 个（移动端 ≤4），卡顿时随稀释降低
         var totalEffects = mainCount + satCount;
-        var effectBudget = 2 + Math.round(Math.random() * (MAX_BURST_EFFECTS - 2)); // 2~5（移动2~4）
+        var effMax = Math.max(2, Math.round(MAX_BURST_EFFECTS * (0.55 + dilutionFactor * 0.45)));
+        var effectBudget = 2 + Math.round(Math.random() * (effMax - 2)); // 2~effMax
         if (totalEffects > effectBudget) {
             // 优先保留主烟花，压缩卫星烟花数量
             mainCount = Math.min(mainCount, Math.max(1, effectBudget - 1));
@@ -619,7 +715,7 @@
     var SHORT_WORDS = ['爱你', 'Forever', '甄玥', '♡', '520', '1314'];
     // 长情话：低频出现（完整三行短句），由定时器保证 1min 至少一次
     var LOVE_WORDS = [
-        ['甄玥,爱你Forever', '♡', '5201314'],
+        ['甄玥,爱你,Forever', '♡', '5201314'],
         ['我想把全世界的浪漫', '都藏进一朵烟花里', '只为在你抬头时绽放'],
         ['爱意像夜空里最亮的星', '穿越亿万光年', '只为落在你眼里'],
         ['遇见你之后', '人间四季皆是春天', '星河滚烫也及不上你半分温柔'],
@@ -1004,6 +1100,9 @@
         if (dt > 3) dt = 3; // 帧率骤降时限制步长，避免粒子飞散
         lastTime = time;
 
+        // 动态粒子稀释：根据实时 FPS 自动降载/恢复（平台硬件自适应）
+        updateDilution(time);
+
         update(dt, time);
         draw();
 
@@ -1021,6 +1120,9 @@
         canvas.style.height = H + 'px';
         ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
         createStars();
+        // 屏幕变化后重算粒子预算（硬件档位 + 面积）
+        MAX_PARTICLES = computeMaxParticles();
+        particleBudget = Math.max(200, Math.round(MAX_PARTICLES * dilutionFactor));
     }
 
     // resize 防抖
@@ -1091,7 +1193,11 @@
                 fallingHearts: fallingHearts.length,
                 passion: getPassion(),
                 burstLast1s: recent,
-                loveCount1min: loveCountInMinute()
+                loveCount1min: loveCountInMinute(),
+                dilutionFactor: dilutionFactor,
+                particleBudget: particleBudget,
+                maxParticles: MAX_PARTICLES,
+                hardwareScore: HARDWARE_SCORE
             };
         }
     };
