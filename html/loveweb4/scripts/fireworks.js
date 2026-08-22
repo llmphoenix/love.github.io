@@ -41,8 +41,9 @@
         ctx.fillRect(0, 0, W, H);
     }
 
-    // ============ 星星背景 ============
+    // ============ 动态星空背景 ============
     var stars = [];
+    var meteors = []; // 流星
     var STAR_COUNT = Math.round((isMobile ? 90 : 150) * DENSITY);
 
     function createStars() {
@@ -51,21 +52,101 @@
             stars.push({
                 x: Math.random() * W,
                 y: Math.random() * H,
-                r: Math.random() * 1.2 + 0.3,
+                r: Math.random() * 1.3 + 0.3,
                 twinkle: Math.random() * Math.PI * 2,
-                speed: Math.random() * 0.02 + 0.005
+                speed: Math.random() * 0.02 + 0.005,       // 闪烁速度
+                amp: Math.random() * 0.5 + 0.3,           // 闪烁幅度（动态差异）
+                // 漂移（非常缓慢，星星有生命感）
+                vx: (Math.random() - 0.5) * 0.04,
+                vy: (Math.random() - 0.5) * 0.02,
+                // 偶尔的"呼吸"：整体明暗节奏差异
+                phase: Math.random() * Math.PI * 2,
+                layer: Math.random() // 远近层次：远处小淡、近处大亮
             });
         }
     }
 
     function drawStars(time) {
+        // 流星（偶尔划过，增强动态感）
+        for (var m = meteors.length - 1; m >= 0; m--) {
+            var met = meteors[m];
+            met.life--;
+            met.x += met.vx;
+            met.y += met.vy;
+            met.vx *= 0.99;
+            met.vy *= 0.99;
+
+            var malpha = Math.max(0, met.life / 40);
+            // 流星头
+            ctx.beginPath();
+            ctx.arc(met.x, met.y, 1.8, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,255,255,' + malpha.toFixed(3) + ')';
+            ctx.fill();
+            // 流星尾（拖拽亮线）
+            var tailLen = 18;
+            var tailX = met.x - met.vx * tailLen;
+            var tailY = met.y - met.vy * tailLen;
+            var grad = ctx.createLinearGradient(met.x, met.y, tailX, tailY);
+            grad.addColorStop(0, 'rgba(255,255,255,' + (malpha * 0.8).toFixed(3) + ')');
+            grad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.strokeStyle = grad;
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(met.x, met.y);
+            ctx.lineTo(tailX, tailY);
+            ctx.stroke();
+
+            if (met.life <= 0) meteors.splice(m, 1);
+        }
+
         for (var i = 0; i < stars.length; i++) {
             var s = stars[i];
-            var alpha = 0.4 + 0.6 * Math.abs(Math.sin(s.twinkle + time * s.speed * 40));
+
+            // 缓慢漂移
+            s.x += s.vx;
+            s.y += s.vy;
+            // 越界回绕（从天幕一侧漂到另一侧）
+            if (s.x < -5) s.x = W + 5;
+            if (s.x > W + 5) s.x = -5;
+            if (s.y < -5) s.y = H + 5;
+            if (s.y > H + 5) s.y = -5;
+
+            // 闪烁：叠加慢呼吸，让每颗星有自己的节奏
+            var breathe = 0.7 + 0.3 * Math.sin(s.phase + time * 0.3);
+            var flicker = Math.abs(Math.sin(s.twinkle + time * s.speed * 40));
+            var alpha = s.amp * (0.35 + 0.65 * flicker) * breathe;
+            alpha = Math.max(0.05, Math.min(1, alpha));
+
+            // 远近层次：远星小而暗，近星大而亮 + 微光晕
+            var far = s.layer;
             ctx.beginPath();
-            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+            ctx.arc(s.x, s.y, s.r * (0.7 + far * 0.6), 0, Math.PI * 2);
             ctx.fillStyle = 'rgba(255,255,255,' + alpha.toFixed(3) + ')';
             ctx.fill();
+            // 近星加一点光晕（层次感）
+            if (far > 0.7) {
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.r * 2.2, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,255,255,' + (alpha * 0.12).toFixed(3) + ')';
+                ctx.fill();
+            }
+        }
+    }
+
+    // 偶尔生成流星（动态点缀）
+    var nextMeteor = 0;
+    function maybeSpawnMeteor(time) {
+        if (time > nextMeteor) {
+            var angle = Math.PI * (0.15 + Math.random() * 0.3); // 斜向划过
+            var speed = 5 + Math.random() * 6;
+            meteors.push({
+                x: Math.random() * W,
+                y: Math.random() * H * 0.4,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                life: 40 + Math.random() * 30
+            });
+            nextMeteor = time + (isMobile ? 9000 : 6000) * (0.7 + Math.random() * 0.6);
         }
     }
 
@@ -92,6 +173,7 @@
 
     // 烟花形状：返回粒子角度/参数数组
     // 0 圆形 | 1 心形 | 2 双层环 | 3 玫瑰花瓣 | 4 螺旋 | 5 扇形 | 6 千层牡丹
+    // 7 双心交叠 | 8 水母(下拉丝) | 9 彗星(拖尾) | 10 垂柳(泪滴下坠) | 11 皇冠 | 12 六瓣花 | 13 亮环(单圈火环)
     function shapePoints(type, total) {
         var pts = [];
         var i, t, a, r;
@@ -142,6 +224,58 @@
                     pts.push({ a: a + layer * 0.18, d: [1, 0.72, 0.5][layer] });
                 }
                 break;
+            case 7: // 双心交叠（一大一小两颗心，位置错开）
+                for (i = 0; i < total; i++) {
+                    t = (Math.PI * 2 * i) / total;
+                    if (i % 2 === 0) pts.push({ a: t, d: 1, heart: true });
+                    else pts.push({ a: t + Math.PI * 0.5, d: 0.72, heart: true });
+                }
+                break;
+            case 8: // 水母（上半圆 + 下半部下拉丝垂须）
+                for (i = 0; i < total; i++) {
+                    if (i < total / 2) {
+                        // 上半圆伞面
+                        a = Math.PI * (i / (total / 2));
+                        pts.push({ a: a, d: 1 });
+                    } else {
+                        // 下半部：向下拉长的须（速度慢、重力强 → 形成垂丝）
+                        a = Math.PI / 2 + (Math.random() - 0.5) * 0.8;
+                        pts.push({ a: a, d: Math.random() * 0.5 + 0.5, droop: true });
+                    }
+                }
+                break;
+            case 9: // 彗星（一个方向喷射 + 强拖尾）
+                for (i = 0; i < total; i++) {
+                    a = -Math.PI / 2 + (Math.random() - 0.5) * 0.7; // 主要向上偏
+                    pts.push({ a: a, d: Math.random() * 0.8 + 0.4, comet: true });
+                }
+                break;
+            case 10: // 垂柳（顶部炸开，粒子带重力下坠如柳丝）
+                for (i = 0; i < total; i++) {
+                    a = -Math.PI / 2 + (Math.random() - 0.5) * 1.2;
+                    pts.push({ a: a, d: Math.random() * 0.9 + 0.3, willow: true });
+                }
+                break;
+            case 11: // 皇冠（顶部圆 + 两侧向下展开）
+                for (i = 0; i < total; i++) {
+                    a = (Math.PI * 2 * i) / total;
+                    var hc = Math.abs(Math.cos(a)) < 0.3 ? 1 : 0.4;
+                    pts.push({ a: a, d: hc });
+                }
+                break;
+            case 12: // 六瓣花（r = |cos(3θ)| 六瓣）
+                for (i = 0; i < total; i++) {
+                    t = (Math.PI * 2 * i) / total;
+                    r = Math.abs(Math.cos(3 * t / 1));
+                    pts.push({ a: t, d: Math.max(0.35, r * 0.85 + 0.15) });
+                }
+                break;
+            case 13: // 亮环（单圈，速度快，无内层 → 细密火环）
+                for (i = 0; i < total; i++) {
+                    a = (Math.PI * 2 * i) / total;
+                    pts.push({ a: a, d: 1, ringThin: true });
+                }
+                break;
             default:
                 for (i = 0; i < total; i++) {
                     pts.push({ a: (Math.PI * 2 * i) / total, d: 1 });
@@ -154,11 +288,21 @@
     // opts: { type, palette, scale(粒子倍率), speedScale, crackle(二次爆裂概率), glow(核心光强度) }
     function explode(x, y, opts) {
         opts = opts || {};
-        var type = opts.type !== undefined ? opts.type : Math.floor(Math.random() * 7);
+        var type = opts.type !== undefined ? opts.type : Math.floor(Math.random() * 14);
         var palette = opts.palette || randomPalette();
 
-        var total = Math.round((type === 2 || type === 6 ? 90 : 120) * DENSITY * (opts.scale || 1));
+        // 特殊类型的粒子数微调
+        var baseTotal = 120;
+        if (type === 2 || type === 6 || type === 11) baseTotal = 90;
+        if (type === 13) baseTotal = 100;  // 亮环：细密
+        if (type === 8 || type === 10) baseTotal = 110; // 水母/垂柳
+        if (type === 9) baseTotal = 60;    // 彗星：集中喷射
+        var total = Math.round(baseTotal * DENSITY * (opts.scale || 1));
+
         var speedBase = (Math.random() * 1.2 + 2.6) * (opts.speedScale || 1);
+        // 垂柳/彗星用略低的初速，靠重力形成垂坠
+        if (type === 10) speedBase *= 0.7;
+        if (type === 9) speedBase *= 1.15;
         var pts = shapePoints(type, total);
         var coreGlow = opts.glow || 1;
 
@@ -187,11 +331,20 @@
             var r = Math.random();
             var size = r < 0.7 ? (Math.random() * 1 + 1.1) : (Math.random() * 2.4 + 2);
 
+            // 特殊形状的物理属性
+            var gravity = 0.045 * (0.9 + Math.random() * 0.2);
+            var friction = 0.985;
+            var extraTrail = 4;
+            if (ang.droop) { gravity *= 0.85; friction *= 0.995; extraTrail = 8; } // 水母垂须：长拖尾、缓坠
+            if (ang.willow) { gravity *= 1.5; friction *= 0.99; extraTrail = 9; size *= 0.8; } // 垂柳：强重力下坠 + 长丝
+            if (ang.comet) { gravity *= 0.4; friction *= 0.99; extraTrail = 12; size *= 1.4; } // 彗星：长亮尾
+            if (ang.ringThin) { size *= 0.85; extraTrail = 5; } // 亮环：细密小粒子
+
             var p = {
                 x: x, y: y,
                 vx: vx, vy: vy,
-                gravity: 0.045 * (0.9 + Math.random() * 0.2),
-                friction: 0.985,
+                gravity: gravity,
+                friction: friction,
                 alpha: 1,
                 decay: Math.random() * 0.012 + 0.008,
                 life: life,
@@ -199,6 +352,7 @@
                 size: size,
                 // 拖尾
                 trail: [],
+                maxTrail: extraTrail,
                 // 真实感增强
                 twinkle: Math.random() * Math.PI * 2,      // 闪烁相位
                 twinkleSpeed: Math.random() * 0.15 + 0.05, // 闪烁速度
@@ -300,14 +454,47 @@
         return true;
     }
 
+    // ============ 延迟绽放调度（性能优化） ============
+    // 一次点击的烟花不再同时出现，而是分散到 ~1s 内依次绽放：
+    //   - 单帧粒子峰值被摊平（同一帧最多 1 朵爆炸），高激情连点也不卡
+    //   - 视觉上是连珠式连续绽放，更接近真实烟花节奏
+    var pendingEffects = []; // { at: 触发时间戳, fn: 回调 }
+    var MAX_PENDING = 600;  // 待触发上限（极端连点时优先丢弃较晚的爱心/次要效果）
+
+    // 注册一个延迟效果
+    function scheduleEffect(delayMs, fn) {
+        if (pendingEffects.length >= MAX_PENDING) return;
+        pendingEffects.push({ at: performance.now() + delayMs, fn: fn });
+    }
+
+    // 注册一朵延迟爆炸的烟花
+    function scheduleExplode(delayMs, x, y, opts) {
+        scheduleEffect(delayMs, function () {
+            explode(x, y, opts);
+        });
+    }
+
+    // 在主循环中触发到期效果（按时间排序处理，避免长时堆积）
+    function processPending(time) {
+        if (!pendingEffects.length) return;
+        // 到期的立即触发；未到期的保留
+        for (var i = pendingEffects.length - 1; i >= 0; i--) {
+            if (time >= pendingEffects[i].at) {
+                var fn = pendingEffects[i].fn;
+                pendingEffects.splice(i, 1);
+                fn();
+            }
+        }
+    }
+
     // 根据激情挑选更绚烂的形状（高激情偏向复杂绚丽造型）
     function pickType(p) {
         if (p > 0.7) {
-            // 高激情：心形 / 玫瑰 / 螺旋 / 牡丹
-            return [1, 3, 4, 6][Math.floor(Math.random() * 4)];
+            // 高激情：双心 / 玫瑰 / 螺旋 / 牡丹 / 六瓣花 / 皇冠 / 水母
+            return [1, 3, 4, 6, 7, 8, 11, 12][Math.floor(Math.random() * 8)];
         } else if (p > 0.35) {
-            // 中激情：混合
-            return [0, 1, 2, 3, 4, 6][Math.floor(Math.random() * 6)];
+            // 中激情：混合（含垂柳、彗星、亮环）
+            return [0, 1, 2, 3, 4, 6, 9, 10, 12, 13][Math.floor(Math.random() * 10)];
         } else {
             // 低激情：基础圆形 / 心形 / 环状
             return [0, 1, 2][Math.floor(Math.random() * 3)];
@@ -336,11 +523,10 @@
         var textChance = 0.08 + p * 0.6;
         var heartCount = Math.round(1 + p * 6 + Math.random() * 3);
 
-        // 主烟花（多个时错开一点位置，组合更立体）
+        // 主烟花：第一发立即绽放，其余在 60~280ms 内错开（尽量短，不超过 ~0.3s）
         for (var m = 0; m < mainCount; m++) {
-            var mx = x + (Math.random() * 70 - 35);
-            var my = y + (Math.random() * 50 - 25);
-            explode(mx, my, {
+            var delay = m === 0 ? 0 : (60 + Math.random() * 220);
+            scheduleExplode(delay, x, y, {
                 type: pickType(pj),
                 scale: particleScale / Math.sqrt(Math.max(1, mainCount)),
                 speedScale: speedScale,
@@ -350,14 +536,16 @@
             });
         }
 
-        // 卫星烟花：环绕点击点一周，如喷泉喷涌
+        // 卫星烟花：环绕点击点一周，在 120~880ms 内依次点亮（如连珠绽放）
         if (satCount > 0) {
             for (var s = 0; s < satCount; s++) {
                 var ang = (Math.PI * 2 * s) / satCount + Math.random() * 0.5;
                 var dist = 70 + Math.random() * 70;
                 var sx = x + Math.cos(ang) * dist;
                 var sy = y + Math.sin(ang) * dist * 0.7;
-                explode(sx, sy, {
+                // 依次递增延迟，整体不超过 ~0.9s
+                var sDelay = 120 + (s / satCount) * 620 + Math.random() * 120;
+                scheduleExplode(sDelay, sx, sy, {
                     type: pickType(pj),
                     scale: (0.5 + pj * 0.5) * (0.7 + Math.random() * 0.5),
                     speedScale: speedScale * 0.9,
@@ -368,14 +556,20 @@
             }
         }
 
-        // 浪漫度：飘落爱心（数量随激情）
+        // 浪漫度：爱心在 80~700ms 内分批飘落（不一次堆满屏）
         if (Math.random() < heartChance) {
-            for (var h = 0; h < heartCount; h++) spawnFallingHeart(x, y);
+            for (var h = 0; h < heartCount; h++) {
+                scheduleEffect(80 + Math.random() * 620, (function (hx, hy) {
+                    return function () { spawnFallingHeart(hx, hy); };
+                })(x, y));
+            }
         }
 
-        // 文字祝福（概率随激情）
+        // 文字祝福：延迟 ~200~500ms 出现（主烟花爆开之后浮现）
         if (Math.random() < textChance) {
-            explodeText(x, y);
+            scheduleEffect(200 + Math.random() * 300, (function (tx, ty) {
+                return function () { explodeText(tx, ty); };
+            })(x, y));
         }
 
         // 震感随激情增强（支持的设备）
@@ -392,51 +586,131 @@
     var autoLaunchInterval = isMobile ? 2200 : 1400; // 自动发射间隔（ms）
     var lastTime = 0;
 
-    // 文字祝福（爆炸时偶尔打出）
-    var WORDS = ['爱你', 'Forever', '甄玥', '♡', '520', '1314'];
+    // ============ 浪漫情话系统（完整短句，1 分钟至少一次） ============
+    var LOVE_WORDS = [
+        ['爱你', 'Forever', '甄玥', '♡', '520', '1314'],
+        ['我想把全世界的浪漫', '都藏进一朵烟花里', '只为在你抬头时绽放'],
+        ['爱意像夜空里最亮的星', '穿越亿万光年', '只为落在你眼里'],
+        ['遇见你之后', '人间四季皆是春天', '星河滚烫也及不上你半分温柔'],
+        ['愿陪你走过山川湖海', '也陪你细数晨昏四季', '一生一世，眼里只有你'],
+        ['你是我漫长岁月里', '最盛大的一场心动', '也是我余生唯一的偏袒'],
+        ['这世间万物皆明码标价', '唯独我对你的爱意', '无条件奉上，永不收回'],
+        ['所有晦暗都留给过往', '从遇见你开始', '凛冬散尽，星河长明'],
+        ['我看过一千个关于秋天的句子', '都不及这一刻', '微风落下的你'],
+        ['你是藏在云层里的月亮', '也是我穷极一生', '想要奔赴的远方'],
+        ['春风十里不如你', '夏阳满山不如你', '秋雨淅沥不如你，冬雪皑皑不如你'],
+        ['我这一生都是坚定的唯物主义者', '唯有你', '我希望有来生'],
+        ['海底月是天上月', '眼前人是心上人', '向来心是看客心'],
+        ['纵使生活一地鸡毛', '我也愿为你', '编织成最美的烟火'],
+        ['愿我如星君如月', '夜夜流光相皎洁', '月暂晦，星常明'],
+        ['你是我的独家记忆', '也是我的来日方长', '岁岁年年，皆是你']
+    ];
     var textBursts = [];
-    var currentWord = '';
+    var lastLoveTime = 0; // 上一次情话出现时间（用于确保 1min 至少一次）
+    var LOVE_INTERVAL = 60000; // 60 秒
+    var usedLoveIndex = -1;
 
+    // 随机选一句不重复的情话（避免连续重复）
+    function pickLoveLine() {
+        var idx = Math.floor(Math.random() * LOVE_WORDS.length);
+        if (idx === usedLoveIndex && LOVE_WORDS.length > 1) {
+            idx = (idx + 1 + Math.floor(Math.random() * (LOVE_WORDS.length - 1))) % LOVE_WORDS.length;
+        }
+        usedLoveIndex = idx;
+        return LOVE_WORDS[idx];
+    }
+
+    // 打出完整情话（多行，逐行绽放效果）
     function explodeText(x, y) {
-        var word = WORDS[Math.floor(Math.random() * WORDS.length)];
-        currentWord = word;
+        var lines = pickLoveLine();
         textBursts.push({
             x: x, y: y,
-            word: word,
-            alpha: 1,
-            scale: 0.4,
-            life: 90
+            lines: lines,
+            alpha: 0,
+            scale: 0.6,
+            life: 0,
+            // 逐行浮现：每行错开一点时间
+            lineStart: 0,
+            fadeIn: 0.045,  // 渐显速度
+            fadeOut: 0.02,  // 渐隐速度
+            hold: 130,      // 停留帧数
+            maxLife: 180
         });
     }
 
     function drawTextBursts() {
         for (var i = textBursts.length - 1; i >= 0; i--) {
             var tb = textBursts[i];
-            tb.life--;
-            tb.scale += 0.02;
-            if (tb.life <= 60) tb.alpha -= 1 / 60;
+            tb.life++;
+            if (tb.life <= 30) {
+                tb.alpha = Math.min(1, tb.alpha + tb.fadeIn);
+                tb.scale += (1 - tb.scale) * 0.06;
+            } else if (tb.life > 30 + tb.hold) {
+                tb.alpha = Math.max(0, tb.alpha - tb.fadeOut);
+            }
+            tb.scale = Math.min(1.05, tb.scale);
 
-            var alpha = Math.max(0, tb.alpha);
+            var alpha = Math.max(0, Math.min(1, tb.alpha));
+            if (alpha <= 0.01 && tb.life > 40) {
+                textBursts.splice(i, 1);
+                continue;
+            }
+
             ctx.save();
             ctx.translate(tb.x, tb.y);
             ctx.scale(tb.scale, tb.scale);
             ctx.globalAlpha = alpha;
-            ctx.font = 'bold 28px "PingFang SC", "Microsoft YaHei", sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
+            ctx.font = 'bold 26px "PingFang SC", "Microsoft YaHei", sans-serif';
             ctx.shadowColor = '#ff9ff3';
-            ctx.shadowBlur = 18;
-            ctx.fillStyle = '#ffe0f0';
-            ctx.fillText(tb.word, 0, 0);
+            ctx.shadowBlur = 20;
+
+            var lineH = 34;
+            var startY = -((tb.lines.length - 1) * lineH) / 2;
+            for (var li = 0; li < tb.lines.length; li++) {
+                // 逐行浮现：每行错开约 8 帧
+                var lineAlpha = alpha;
+                var lineProgress = tb.life - li * 8;
+                if (lineProgress < 0) continue;
+                if (lineProgress < 30) lineAlpha = alpha * (lineProgress / 30);
+                ctx.globalAlpha = lineAlpha;
+                ctx.fillStyle = '#ffe0f0';
+                ctx.fillText(tb.lines[li], 0, startY + li * lineH);
+            }
             ctx.restore();
 
-            if (tb.life <= 0 || tb.alpha <= 0) {
-                textBursts.splice(i, 1);
-            }
+            if (tb.life >= tb.maxLife) textBursts.splice(i, 1);
+        }
+    }
+
+    // 确保情话 1 分钟至少出现一次：定时检查，到点就在屏幕上方打出一句
+    function ensureLoveAppears(time) {
+        var now = time; // ms
+        if (now - lastLoveTime >= LOVE_INTERVAL) {
+            lastLoveTime = now;
+            var lx = W * (0.3 + Math.random() * 0.4);
+            var ly = H * (0.25 + Math.random() * 0.2);
+            explodeText(lx, ly);
+            // 伴随一朵爱心烟花，呼应情话（更浪漫）
+            scheduleExplode(150, lx, ly + 40, {
+                type: 1,
+                scale: 0.55,
+                speedScale: 0.8,
+                crackle: 0.2,
+                glow: 1.4,
+                palette: randomPalette()
+            });
         }
     }
 
     function update(dt, time) {
+        // 触发到期的延迟绽放效果（一次点击的烟花分散在 ~1s 内依次出现）
+        processPending(time);
+
+        // 确保浪漫情话 1 分钟至少出现一次
+        ensureLoveAppears(time);
+
         // 自动发射（激情越高，发射越频繁、越绚烂）
         if (time > nextLaunch) {
             var passion = getPassion();
@@ -523,7 +797,7 @@
             }
 
             // 拖尾
-            if (pt.trail.length > 4) pt.trail.shift();
+            if (pt.trail.length > (pt.maxTrail || 4)) pt.trail.shift();
             pt.trail.push({ x: pt.x, y: pt.y });
 
             pt.vy += pt.gravity;
@@ -553,6 +827,7 @@
     function draw() {
         drawSky();
         drawStars(performance.now() / 1000);
+        maybeSpawnMeteor(performance.now() / 1000);
 
         // 火箭拖尾
         for (var i = 0; i < rockets.length; i++) {
@@ -703,6 +978,7 @@
     for (var n = 0; n < 3; n++) {
         setTimeout(launch, n * 400);
     }
+    lastLoveTime = performance.now() + 1000; // 首次情话在页面加载约 1s 后即可出现
     nextLaunch = performance.now() + 1200;
     requestAnimationFrame(loop);
 
@@ -712,6 +988,16 @@
         explode: explode,
         explodeBurst: explodeBurst,
         getPassion: getPassion,
-        recordClick: recordClick
+        recordClick: recordClick,
+        // 调试/测试：返回内部状态（粒子数、待触发效果数、激情）
+        debug: function () {
+            return {
+                particles: particles.length,
+                pending: pendingEffects.length,
+                rockets: rockets.length,
+                fallingHearts: fallingHearts.length,
+                passion: getPassion()
+            };
+        }
     };
 })(window);
