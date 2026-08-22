@@ -1,0 +1,243 @@
+/* ============================================================
+ * 绚烂烟花 fireworks.css
+ * 参照 loveweb3 移动端优化经验：安全区、44px 触摸目标、横屏适配
+ * ============================================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+    /* 移动端：禁止长按选择/呼出菜单、避免点击高亮 */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    overscroll-behavior: none;
+}
+
+/* 移动端消除点击延迟 */
+html {
+    touch-action: manipulation;
+}
+
+body {
+    position: relative;
+    background-color: #05070f;
+    overflow: hidden;
+}
+
+/* 烟花画布：全屏铺满 */
+#fireworks {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: block;
+    cursor: crosshair;
+}
+
+/* 返回按钮 */
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50px;
+    padding: 10px 20px;
+    text-decoration: none;
+    color: rgba(200, 220, 255, 0.9);
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateX(-3px);
+}
+
+/* 音乐控制按钮 */
+.music-control {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50px;
+    padding: 10px 20px;
+    color: rgba(200, 220, 255, 0.9);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+}
+
+.music-control:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateX(3px);
+}
+
+.music-control.playing .music-icon {
+    animation: musicSpin 2s linear infinite;
+}
+
+@keyframes musicSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* 页面标题（悬浮于夜空中央偏上） */
+.page-title {
+    position: fixed;
+    top: 110px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: clamp(1.6rem, 4.5vw, 2.6rem);
+    font-weight: 300;
+    color: rgba(240, 240, 255, 0.92);
+    letter-spacing: 10px;
+    text-shadow:
+        0 0 20px rgba(255, 120, 200, 0.7),
+        0 0 40px rgba(120, 180, 255, 0.5),
+        0 0 80px rgba(255, 200, 120, 0.3);
+    z-index: 50;
+    animation: titleGlow 3s ease-in-out infinite;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+@keyframes titleGlow {
+    0%, 100% {
+        text-shadow:
+            0 0 20px rgba(255, 120, 200, 0.7),
+            0 0 40px rgba(120, 180, 255, 0.5),
+            0 0 80px rgba(255, 200, 120, 0.3);
+    }
+    50% {
+        text-shadow:
+            0 0 30px rgba(255, 160, 220, 0.9),
+            0 0 60px rgba(160, 200, 255, 0.7),
+            0 0 100px rgba(255, 220, 160, 0.5);
+    }
+}
+
+/* 提示文字 */
+.hint-text {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: clamp(0.75rem, 2vw, 0.9rem);
+    color: rgba(220, 230, 255, 0.6);
+    letter-spacing: 2px;
+    z-index: 50;
+    animation: hintPulse 2.5s ease-in-out infinite;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+@keyframes hintPulse {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 0.85; }
+}
+
+/* 手机端适配 */
+@media (max-width: 768px) {
+    .back-btn, .music-control {
+        padding: 8px 15px;
+        font-size: 0.8rem;
+    }
+
+    /* 返回按钮：左上角（避开刘海安全区） */
+    .back-btn {
+        top: calc(15px + env(safe-area-inset-top));
+        left: calc(15px + env(safe-area-inset-left));
+    }
+
+    .music-control {
+        top: calc(15px + env(safe-area-inset-top));
+        right: calc(15px + env(safe-area-inset-right));
+    }
+
+    .page-title {
+        top: 88px;
+        letter-spacing: 5px;
+    }
+
+    .hint-text {
+        bottom: calc(34px + env(safe-area-inset-bottom));
+    }
+}
+
+@media (max-width: 480px) {
+    .music-text {
+        display: none;
+    }
+
+    .music-control {
+        padding: 8px 12px;
+    }
+
+    .page-title {
+        top: 78px;
+        font-size: 1.4rem;
+        letter-spacing: 4px;
+    }
+
+    /* 触摸目标最小 44px 可点击区域（移动端易用性） */
+    .back-btn, .music-control {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+}
+
+/* ===== 手机横屏适配（仅移动宽度 ≤1024px，高度 < 500px） ===== */
+@media (max-width: 1024px) and (orientation: landscape) and (max-height: 500px) {
+    /* 标题：贴顶部偏下，避开顶部按钮 */
+    .page-title {
+        top: 58px;
+        font-size: 1.2rem;
+        letter-spacing: 4px;
+    }
+
+    /* 提示文字：贴底部安全区 */
+    .hint-text {
+        bottom: 12px;
+        font-size: 0.7rem;
+    }
+
+    /* 按钮更紧凑，贴合横屏 */
+    .back-btn {
+        top: calc(10px + env(safe-area-inset-top));
+        left: calc(10px + env(safe-area-inset-left));
+        padding: 7px 12px;
+        font-size: 0.75rem;
+        min-height: 36px;
+    }
+
+    .music-control {
+        top: calc(10px + env(safe-area-inset-top));
+        right: calc(10px + env(safe-area-inset-right));
+        padding: 7px 12px;
+        font-size: 0.75rem;
+        min-height: 36px;
+    }
+}
