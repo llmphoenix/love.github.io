@@ -25,10 +25,18 @@
     <!-- 爱心流星鼠标轨迹拖尾 -->
     <script src="../../js/heart-trail.js?v=20260814-mobile"></script>
     <!-- 统一背景音乐播放器（随机播放，跨页面延续） -->
-    <script src="../../js/music-player.js?v=20260814-mobile"></script>
+    <script src="../../js/music-player.js?v=20260822"></script>
+    <!-- 爱情对白播放器（点击屏幕播放男声/女声对白） -->
+    <script src="../../js/voice-player.js?v=20260822"></script>
+    <!-- 主题环境音播放器（低音量循环） -->
+    <script src="../../js/env-player.js?v=20260822"></script>
     <script>
         // 背景音乐（随机播放，逻辑统一在 js/music-player.js）
         MusicPlayer.init({ audioDir: '../../audio', buttonId: 'musicBtn' });
+        // 爱情对白（点击屏幕随机播放男声/女声/对话，多句不重复）
+        VoicePlayer.init({ theme: 'cloud', canvasId: 'clouds', audioDir: '../../audio/voices', variants: { f: 2, m: 2, b: 2 } });
+        // 环境音（云端风声）
+        EnvPlayer.init({ file: 'cloud_wind.mp3', audioDir: '../../audio/env' });
     </script>
 </body>
 </html>

@@ -19,12 +19,17 @@
 (function (global) {
     'use strict';
 
-    // 播放列表：爱情纯音乐（文件名，需放在 audioDir 目录下）
+    // 播放列表：爱情音乐（文件名，需放在 audioDir 目录下）
+    // 4 首原创钢琴 + 4 首流行抒情风格（原创旋律）
     var PLAYLIST = [
         'Broken Elegance.mp3',
         'Tender Confession.mp3',
         'Starlit Promise.mp3',
-        'Eternal Vow.mp3'
+        'Eternal Vow.mp3',
+        'Heartbeat Melody.mp3',
+        'Soft Embrace.mp3',
+        'First Kiss.mp3',
+        'Eternal Love.mp3'
     ];
 
     var settings = {
@@ -207,6 +212,10 @@
         init: init,
         play: play,
         pause: pause,
+        resume: play,
+        isPlaying: function () {
+            return isPlaying;
+        },
         toggle: toggle,
         next: function () {
             playTrack(pickIndex(currentIndex), 0);

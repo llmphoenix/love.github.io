@@ -396,7 +396,7 @@
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.font = 'bold ' + (tb.fontSize || 26) + 'px "PingFang SC", "Microsoft YaHei", sans-serif';
-            ctx.shadowColor = '#f9a8d4';
+            ctx.shadowColor = '#ffffff';
             ctx.shadowBlur = 20;
             var lineH = 34;
             var startY = -((tb.lines.length - 1) * lineH) / 2;
@@ -406,7 +406,7 @@
                 if (lineProgress < 0) continue;
                 if (lineProgress < 30) lineAlpha = alpha * (lineProgress / 30);
                 ctx.globalAlpha = lineAlpha;
-                ctx.fillStyle = '#fff0f5';
+                ctx.fillStyle = '#8a1e4d';
                 ctx.fillText(tb.lines[li], 0, startY + li * lineH);
             }
             ctx.restore();

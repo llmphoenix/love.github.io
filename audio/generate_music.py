@@ -130,7 +130,7 @@ def extend_events(events, total_sec):
 
 # ---------------- 原创曲目（每首约 2 分钟） ----------------
 
-# 三首曲子的基础旋律（一段约 20-30 秒）
+# 流行爱情风格（原创旋律，常用抒情和声走向：C-G-Am-F、D-Bm-G-A 等）
 MELODIES = {
     'Tender Confession.mp3': [
         (midi('E', 5), 2), (midi('G', 5), 2), (midi('A', 5), 2),
@@ -155,6 +155,34 @@ MELODIES = {
         (midi('A', 5), 3), (midi('G', 5), 1), (midi('F', 5), 4),
         (midi('E', 5), 2), (midi('C', 5), 2), (midi('D', 5), 4),
     ],
+    # 新增：流行抒情风格（C 大调，C-G-Am-F 万能和弦进行）
+    'Heartbeat Melody.mp3': [
+        (midi('C', 5), 2), (midi('E', 5), 1), (midi('G', 5), 1), (midi('E', 5), 2),
+        (midi('D', 5), 2), (midi('C', 5), 1), (midi('D', 5), 1), (midi('E', 5), 2),
+        (midi('G', 5), 2), (midi('A', 5), 2), (midi('G', 5), 2), (midi('E', 5), 2),
+        (midi('C', 5), 2), (midi('E', 5), 2), (midi('D', 5), 4),
+    ],
+    # 新增：温柔流行（D 大调，D-Bm-G-A 走向）
+    'Soft Embrace.mp3': [
+        (midi('D', 5), 2), (midi('F#', 5), 2), (midi('A', 5), 2), (midi('F#', 5), 2),
+        (midi('E', 5), 2), (midi('D', 5), 2), (midi('C#', 5), 2), (midi('D', 5), 2),
+        (midi('B', 4), 2), (midi('D', 5), 2), (midi('E', 5), 2), (midi('F#', 5), 2),
+        (midi('A', 5), 2), (midi('G', 5), 2), (midi('F#', 5), 4),
+    ],
+    # 新增：浪漫叙事（G 大调，G-D-Em-C 走向）
+    'First Kiss.mp3': [
+        (midi('G', 4), 2), (midi('B', 4), 2), (midi('D', 5), 2), (midi('B', 4), 2),
+        (midi('C', 5), 2), (midi('B', 4), 2), (midi('A', 4), 2), (midi('G', 4), 2),
+        (midi('E', 5), 2), (midi('D', 5), 2), (midi('C', 5), 2), (midi('D', 5), 2),
+        (midi('B', 4), 4), (midi('D', 5), 2), (midi('E', 5), 2), (midi('D', 5), 4),
+    ],
+    # 新增：深情告白（F 大调，F-C-Dm-Bb 走向）
+    'Eternal Love.mp3': [
+        (midi('F', 4), 2), (midi('A', 4), 2), (midi('C', 5), 2), (midi('A', 4), 2),
+        (midi('G', 4), 2), (midi('A', 4), 2), (midi('C', 5), 2), (midi('D', 5), 2),
+        (midi('F', 5), 2), (midi('E', 5), 2), (midi('D', 5), 2), (midi('C', 5), 2),
+        (midi('A', 4), 2), (midi('C', 5), 2), (midi('D', 5), 4),
+    ],
 }
 
 # 每首目标时长（秒）
@@ -162,6 +190,10 @@ TARGET_SEC = {
     'Tender Confession.mp3': 120,
     'Starlit Promise.mp3': 115,
     'Eternal Vow.mp3': 125,
+    'Heartbeat Melody.mp3': 118,
+    'Soft Embrace.mp3': 122,
+    'First Kiss.mp3': 116,
+    'Eternal Love.mp3': 128,
 }
 
 # 每首速度
@@ -169,6 +201,10 @@ TEMPOS = {
     'Tender Confession.mp3': 72,
     'Starlit Promise.mp3': 88,
     'Eternal Vow.mp3': 66,
+    'Heartbeat Melody.mp3': 78,
+    'Soft Embrace.mp3': 70,
+    'First Kiss.mp3': 84,
+    'Eternal Love.mp3': 68,
 }
 
 SONGS = {}
