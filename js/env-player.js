@@ -23,6 +23,9 @@
     var buffer = null;
     var started = false;
     var baseVolume = 0.5;
+    var audioFallback = null;  // <audio> 兜底元素
+    var audioDir = 'audio/env';
+    var file = '';
 
     function createContext() {
         var AC = global.AudioContext || global.webkitAudioContext;
@@ -34,50 +37,107 @@
         }
     }
 
-    function start() {
+    // 真正创建并启动循环音源（必须在 context 处于 running 状态）
+    function startSource() {
         if (!ctx || !buffer || started) return;
-        // 首次交互时 resume 音频上下文（解锁自动播放限制）
-        if (ctx.state === 'suspended') {
-            ctx.resume().catch(function () { /* 忽略 */ });
-        }
-        // 创建循环音源
+        if (ctx.state !== 'running') return; // 尚未解锁，等待 resume 完成后再调
         source = ctx.createBufferSource();
         source.buffer = buffer;
         source.loop = true;
         source.connect(gain);
         gain.gain.value = baseVolume;
-        source.start(0);
-        started = true;
+        try {
+            source.start(0);
+            started = true;
+        } catch (e) {
+            // 状态异常：回退到 <audio> 兜底
+            startFallback();
+        }
+    }
+
+    function startFallback() {
+        if (started || !file) return;
+        if (!audioFallback) {
+            audioFallback = new Audio();
+            audioFallback.loop = true;
+            audioFallback.preload = 'auto';
+            audioFallback.src = audioDir + '/' + file;
+            if (document.body) document.body.appendChild(audioFallback);
+        }
+        var p = audioFallback.play();
+        if (p && p.then) {
+            p.then(function () { started = true; })
+             .catch(function () { /* 被拦截，等下次交互重试 */ });
+        } else {
+            started = true;
+        }
+    }
+
+    function start() {
+        if (started) return;
+        if (ctx && buffer) {
+            if (ctx.state === 'suspended') {
+                // 先解锁音频上下文，完成后才真正启动（手机上关键）
+                ctx.resume().then(function () {
+                    startSource();
+                }).catch(function () {
+                    // resume 失败：回退到 <audio>
+                    startFallback();
+                });
+            } else if (ctx.state === 'running') {
+                startSource();
+            } else {
+                startFallback();
+            }
+        } else if (!ctx) {
+            // 无 AudioContext 支持：直接 <audio> 兜底
+            startFallback();
+        }
+        // buffer 尚未解码完成：等 onload 解码后自动 start，这里先不动作
     }
 
     function init(opts) {
         opts = opts || {};
-        var file = opts.file || '';
-        var audioDir = opts.audioDir || 'audio/env';
+        file = opts.file || '';
+        audioDir = opts.audioDir || 'audio/env';
         if (!file) return;
 
         baseVolume = opts.volume || 0.5;
         ctx = createContext();
-        if (!ctx) return;
 
-        gain = ctx.createGain();
-        gain.gain.value = baseVolume;
-        gain.connect(ctx.destination);
+        if (ctx) {
+            gain = ctx.createGain();
+            gain.gain.value = baseVolume;
+            gain.connect(ctx.destination);
 
-        // 预加载并解码环境音
-        var url = audioDir + '/' + file;
-        var req = new XMLHttpRequest();
-        req.open('GET', url, true);
-        req.responseType = 'arraybuffer';
-        req.onload = function () {
-            ctx.decodeAudioData(req.response, function (decoded) {
-                buffer = decoded;
-                // 尝试自动播放（桌面通常可以）
-                start();
-            }, function () { /* 解码失败 */ });
-        };
-        req.onerror = function () { /* 加载失败 */ };
-        req.send();
+            // 预加载并解码环境音
+            var url = audioDir + '/' + file;
+            var req = new XMLHttpRequest();
+            req.open('GET', url, true);
+            req.responseType = 'arraybuffer';
+            req.onload = function () {
+                if (ctx && typeof ctx.decodeAudioData === 'function') {
+                    ctx.decodeAudioData(req.response, function (decoded) {
+                        buffer = decoded;
+                        // 尝试自动播放（桌面通常可以）
+                        start();
+                    }, function () {
+                        // 解码失败：回退到 <audio>
+                        startFallback();
+                    });
+                } else {
+                    startFallback();
+                }
+            };
+            req.onerror = function () {
+                // 加载失败：回退到 <audio>
+                startFallback();
+            };
+            req.send();
+        } else {
+            // 无 AudioContext：直接用 <audio> 兜底
+            startFallback();
+        }
 
         // 首次用户交互兜底（覆盖浏览器自动播放限制）
         // 注意：不能 once，若首次交互仍未解锁，需多次交互重试
@@ -91,14 +151,28 @@
         document.addEventListener('keydown', tryStart);
 
         // 对白播放时略微降低环境音（避免干扰），播完恢复
+        var setVolume = function (v) {
+            baseVolume = v;
+            if (gain) {
+                gain.gain.linearRampToValueAtTime(v, ctx.currentTime + 0.3);
+            }
+            if (audioFallback) {
+                audioFallback.volume = v;
+            }
+        };
         global.addEventListener('voice-overlay', function (e) {
-            if (!gain) return;
             var target = baseVolume;
             if (e.detail && e.detail.paused) {
                 target = baseVolume * 0.4;
+            } else {
+                target = baseVolume;
             }
-            // 平滑过渡音量
-            gain.gain.linearRampToValueAtTime(target, ctx.currentTime + 0.3);
+            if (gain) {
+                gain.gain.linearRampToValueAtTime(target, ctx.currentTime + 0.3);
+            }
+            if (audioFallback) {
+                audioFallback.volume = target;
+            }
         });
     }
 
@@ -112,7 +186,8 @@
                 hasBuffer: !!buffer,
                 started: started,
                 gain: gain ? gain.gain.value : 0,
-                baseVolume: baseVolume
+                baseVolume: baseVolume,
+                usingFallback: !!audioFallback
             };
         }
     };

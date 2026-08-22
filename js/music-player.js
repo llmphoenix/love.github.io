@@ -41,6 +41,25 @@
     var btn = null;
     var isPlaying = false;
     var currentIndex = -1;
+    // 基础音量（默认 1.0），对白播放时可压低到 0.15 实现混合播放
+    var baseVolume = 1.0;
+    var currentVolume = 1.0;
+
+    // 对外音量控制：设置当前音量（对白播放时压低背景音乐）
+    function setVolume(v) {
+        currentVolume = Math.max(0, Math.min(1, v));
+        if (audio) {
+            try { audio.volume = currentVolume; } catch (e) { /* 忽略 */ }
+        }
+    }
+
+    function getVolume() {
+        return currentVolume;
+    }
+
+    function getBaseVolume() {
+        return baseVolume;
+    }
 
     // 跨页面延续使用的存储键
     var STORAGE_KEY = 'love_bg_music_state';
@@ -164,6 +183,7 @@
         audio = new Audio();
         audio.loop = false;      // 由 ended 事件驱动随机切歌
         audio.preload = 'auto';
+        audio.volume = baseVolume;
 
         btn = document.getElementById(settings.buttonId);
 
@@ -216,6 +236,9 @@
         isPlaying: function () {
             return isPlaying;
         },
+        setVolume: setVolume,
+        getVolume: getVolume,
+        getBaseVolume: getBaseVolume,
         toggle: toggle,
         next: function () {
             playTrack(pickIndex(currentIndex), 0);

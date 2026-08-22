@@ -10,8 +10,9 @@
  * 功能：
  *   - 每个主题对应多组爱情对白（女声/男声/男女对话，各有若干句）
  *   - 点击画布时随机播放其中一段，且尽量不与上次重复
- *   - 播放对白时暂停背景音乐（MusicPlayer.pause），播完自动恢复（MusicPlayer.resume）
- *   - 2.5s 节流防连点重叠
+ *   - 播放对白时压低背景音乐音量（混合播放，不暂停/关闭），对白结束恢复
+ *   - 用"引用计数"协调：多条对白叠放时，全部播完才恢复背景音乐音量
+ *   - 定时器兜底：即使对白播放失败/onended 不触发，也会恢复背景音乐音量
  *
  * 文件命名约定（audio/voices/ 目录）：
  *   {theme}_female1.mp3 / {theme}_female2.mp3 ...
@@ -24,13 +25,19 @@
     var audio = null;
     var theme = '';
     var audioDir = 'audio/voices';
-    var musicWasPlaying = false;
     var lastPlayAt = 0;
 
     // 各类型句数（f=女声, m=男声, b=对话），由 init 传入
     var variants = { f: 1, m: 1, b: 1 };
     // 记录上次播放（type, index），用于不重复
     var lastPick = null;
+
+    // 背景音乐被对白压低的引用计数（>0 表示因对白处于低音量）
+    var musicDuckCount = 0;
+    // 对白播放前背景音乐的原始音量（首个对白播放时记录）
+    var musicOriginalVolume = 1.0;
+    // 对白播放时背景音乐的压低音量（混合播放：音乐小声但不停）
+    var DUCK_VOLUME = 0.15;
 
     // 对白播放节流：间隔 > 0.6s 才触发（每次点击都播放，仅防极速连点重叠）
     var MIN_INTERVAL = 600;
@@ -58,6 +65,30 @@
         return theme + '_' + suffix + (idx + 1) + '.mp3';
     }
 
+    // 压低背景音乐（引用计数：多条对白叠放只压一次，混合播放不暂停）
+    function duckMusic() {
+        if (musicDuckCount === 0) {
+            // 记录首个对白播放前音乐的原始音量
+            musicOriginalVolume = 1.0;
+            if (global.MusicPlayer && typeof global.MusicPlayer.getBaseVolume === 'function') {
+                try { musicOriginalVolume = global.MusicPlayer.getBaseVolume(); } catch (e) { /* 忽略 */ }
+            }
+            if (global.MusicPlayer && typeof global.MusicPlayer.setVolume === 'function') {
+                try { global.MusicPlayer.setVolume(DUCK_VOLUME); } catch (e) { /* 忽略 */ }
+            }
+        }
+        musicDuckCount++;
+    }
+
+    // 恢复背景音乐音量（引用计数归零才真正恢复，避免中途被错误恢复）
+    function unduckMusic() {
+        if (musicDuckCount > 0) musicDuckCount--;
+        if (musicDuckCount === 0 &&
+            global.MusicPlayer && typeof global.MusicPlayer.setVolume === 'function') {
+            try { global.MusicPlayer.setVolume(musicOriginalVolume); } catch (e) { /* 忽略 */ }
+        }
+    }
+
     function handlePointer() {
         var now = Date.now();
         if (now - lastPlayAt < MIN_INTERVAL) return;
@@ -65,14 +96,8 @@
 
         var fname = pickDialogue();
 
-        // 对白开始时暂停背景音乐（如果它在播）
-        musicWasPlaying = false;
-        if (global.MusicPlayer && typeof global.MusicPlayer.isPlaying === 'function') {
-            try { musicWasPlaying = global.MusicPlayer.isPlaying(); } catch (e) { /* 忽略 */ }
-        }
-        if (musicWasPlaying && global.MusicPlayer && typeof global.MusicPlayer.pause === 'function') {
-            try { global.MusicPlayer.pause(); } catch (e) { /* 忽略 */ }
-        }
+        // 压低背景音乐音量（混合播放：音乐继续但不打扰对白）
+        duckMusic();
 
         // 通知环境音播放器降低音量
         global.dispatchEvent(new CustomEvent('voice-overlay', { detail: { paused: true } }));
@@ -85,18 +110,35 @@
         audio.pause();
         audio.src = '';
         audio.onended = null;
+        audio.ontimeupdate = null;
         audio.src = audioDir + '/' + fname;
         var p = audio.play();
         if (p && p.catch) {
-            p.catch(function () { /* 自动播放被拦截则忽略 */ });
+            p.catch(function () {
+                // 对白播放失败：立即恢复背景音乐音量与环境音（避免音乐一直压低）
+                unduckMusic();
+                global.dispatchEvent(new CustomEvent('voice-overlay', { detail: { paused: false } }));
+            });
         }
 
-        // 对白结束后恢复背景音乐与环境音
+        // 对白结束 → 恢复背景音乐音量与环境音
         audio.onended = function () {
-            if (musicWasPlaying && global.MusicPlayer && typeof global.MusicPlayer.resume === 'function') {
-                try { global.MusicPlayer.resume(); } catch (e) { /* 忽略 */ }
-            }
+            unduckMusic();
             global.dispatchEvent(new CustomEvent('voice-overlay', { detail: { paused: false } }));
+        };
+
+        // 兜底：无论对白是否正常结束，6 秒后强制恢复背景音乐音量与环境音
+        // （防止 onended 在某些情况下不触发导致音乐一直压低）
+        var safetyTimer = setTimeout(function () {
+            unduckMusic();
+            global.dispatchEvent(new CustomEvent('voice-overlay', { detail: { paused: false } }));
+        }, 6000);
+        audio.ontimeupdate = function () {
+            // 对白播完后清除兜底定时器（已通过 onended 恢复）
+            if (audio.ended && safetyTimer) {
+                clearTimeout(safetyTimer);
+                safetyTimer = null;
+            }
         };
     }
 
