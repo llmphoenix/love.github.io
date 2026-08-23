@@ -102,7 +102,7 @@
     // ============ 粒子容器 ============
     var particles = [];       // 花瓣粒子（旋涡）
     var fireflies = [];       // 萤火虫
-    var roseParticles = [];   // 中央玫瑰的粒子
+    var rosePoints = [];      // 中央 3D 粒子玫瑰（见下方 3D 花束系统）
     var textBursts = [];      // 情话
     var swirls = [];          // 点击旋涡效果
     var petals = [];          // 飘落花瓣
@@ -213,64 +213,275 @@
         ctx.restore();
     }
 
-    // ============ 中央爱之玫瑰（粒子构成，缓缓旋转绽放） ============
-    var roseAngle = 0;
-    var ROSE_COUNT = Math.round((isMobile ? 90 : 130) * DENSITY);
+    // ============ 中央爱之玫瑰：3D 粒子玫瑰花束（网上流行的可旋转观察版） ============
+    // 上千个粒子构成立体花束：花苞→盛开的多层花瓣 + 花茎/叶 + 金色花蕊 + 环绕星尘，
+    // 透视投影 + 深度排序呈现立体感，支持拖拽旋转、滚轮/双指捏合缩放、绽放动画，
+    // 沿用动态粒子稀释系统（ROSE_MAX 随硬件与 FPS 自适应）。
+    var roseRotY = 0.6;          // 绕 Y 轴旋转角（自动 + 拖拽）
+    var roseRotX = 0.32;         // 绕 X 轴俯仰角（略俯视）
+    var roseVelY = 0;            // 拖拽惯性速度
+    var roseVelX = 0;
+    var roseZoom = 1;            // 当前缩放
+    var roseZoomTarget = 1;      // 目标缩放（平滑过渡）
+    var roseBloom = 0;           // 绽放进度 0→1
+    var roseStartTime = 0;
+    var roseDragging = false;
+    var roseBaseR = 0;           // 模型→屏幕基准半径
+    var roseTargetCount = 0;     // 当前应绘制粒子数（随稀释系统自适应）
+    var ROSE_MAX = Math.round((isMobile ? 1600 : 3400) * HARDWARE_SCORE);
+    var ROSE_STEM_COUNT = 140;
+    var ROSE_LEAF_COUNT = 110;
+    var ROSE_BUD_COUNT = 130;
+    var ROSE_SPARK_COUNT = 90;
 
-    function createRose() {
-        roseParticles = [];
-        for (var i = 0; i < ROSE_COUNT; i++) {
-            // 用玫瑰参数方程：r = a * sin(3θ) + 心形混合，生成花瓣状分布
-            var t = (Math.PI * 2 * i) / ROSE_COUNT;
-            var rose = Math.abs(Math.sin(3 * t)) * 0.6 + 0.4; // 3瓣玫瑰基础
-            var heart = 16 * Math.pow(Math.abs(Math.sin(t)), 3); // 心形
-            var mix = 0.55 * rose + 0.45 * (heart / 16);
-            var r = mix * 60;
-            var hue = 340 + Math.sin(i * 0.5) * 30; // 玫红~粉
-            roseParticles.push({
-                baseT: t,
-                baseR: r,
-                orbitR: r,          // 到中心距离
-                orbitSpeed: 0.0015 * (Math.random() > 0.5 ? 1 : -1), // 有的逆时针
-                phase: Math.random() * Math.PI * 2,
-                hue: hue,
-                size: Math.random() * 2 + 1.2,
-                alpha: 0.7,
-                y: (Math.random() - 0.5) * 10
-            });
+    // 玫瑰花瓣层次（内层花苞→外层展开，tilt>0 上翘 / tilt<0 下垂）
+    var ROSE_LAYERS = [
+        { petal: 5,  tilt: 1.05, len: 0.30, width: 0.19, attach: 0.05, baseY: 0.60, curl: 0.75, hue: 333 },
+        { petal: 6,  tilt: 0.82, len: 0.40, width: 0.24, attach: 0.07, baseY: 0.46, curl: 0.55, hue: 337 },
+        { petal: 7,  tilt: 0.52, len: 0.52, width: 0.30, attach: 0.10, baseY: 0.32, curl: 0.40, hue: 342 },
+        { petal: 8,  tilt: 0.20, len: 0.65, width: 0.37, attach: 0.13, baseY: 0.16, curl: 0.28, hue: 347 },
+        { petal: 9,  tilt: -0.18, len: 0.79, width: 0.45, attach: 0.17, baseY: -0.02, curl: 0.18, hue: 351 },
+        { petal: 10, tilt: -0.52, len: 0.93, width: 0.53, attach: 0.21, baseY: -0.20, curl: 0.08, hue: 356 }
+    ];
+
+    // hsl → rgb 字符串（预生成，避免逐帧字符串拼接）
+    function hsl2rgb(h, s, l) {
+        s /= 100; l /= 100;
+        var c = (1 - Math.abs(2 * l - 1)) * s;
+        var hp = (((h % 360) + 360) % 360) / 60;
+        var x = c * (1 - Math.abs((hp % 2) - 1));
+        var r = 0, g = 0, b = 0;
+        if (hp < 1) { r = c; g = x; }
+        else if (hp < 2) { r = x; g = c; }
+        else if (hp < 3) { g = c; b = x; }
+        else if (hp < 4) { g = x; b = c; }
+        else if (hp < 5) { r = x; b = c; }
+        else { r = c; b = x; }
+        var m = l - c / 2;
+        return 'rgb(' + Math.round((r + m) * 255) + ',' + Math.round((g + m) * 255) + ',' + Math.round((b + m) * 255) + ')';
+    }
+
+    function makeRosePoint(x, y, z, rgb, size, alpha, type, phase) {
+        // 闭合态 cx/cy/cz：花瓣收拢成竖向花苞（绽放动画起点）
+        return {
+            x: x, y: y, z: z,
+            cx: x * 0.08, cy: y * 0.38, cz: z * 0.08,
+            rgb: rgb, size: size, a: alpha,
+            type: type || 'petal',
+            phase: phase == null ? Math.random() * Math.PI * 2 : phase
+        };
+    }
+
+    // 一片花瓣：沿长度 s、宽度 w 撒粒子
+    function addPetalParticles(L, ang, count, layerIdx) {
+        var radC = Math.cos(ang), radS = Math.sin(ang);
+        var cosT = Math.cos(L.tilt), sinT = Math.sin(L.tilt);
+        var nx = -radS, nz = radC;                 // 花瓣宽度方向
+        var layerK = layerIdx / (ROSE_LAYERS.length - 1);
+        for (var i = 0; i < count; i++) {
+            var s = Math.pow(Math.random(), 0.75); // 长度参数（偏尖端）
+            var w = (Math.random() * 2 - 1) * 0.95;// 宽度参数
+            var lenS = L.len * s;
+            var dx = radC * lenS * cosT;
+            var dy = lenS * sinT;
+            var dz = radS * lenS * cosT;
+            var wid = L.width * Math.pow(s, 0.6) * w;
+            var wx = nx * wid, wz = nz * wid;
+            var curl = L.curl * L.len * s * s;     // 尖端轻微上卷
+            var x = L.attach * radC + dx + wx;
+            var y = L.baseY + dy + curl;
+            var z = L.attach * radS + dz + wz;
+            // 颜色：内层深玫红、外层偏粉，尖端更亮
+            var hue = L.hue + Math.random() * 8 - 4;
+            var light = 52 + layerK * 10 + (1 - s) * 10 + Math.random() * 10;
+            var size = 0.009 + Math.random() * 0.006 + (1 - s) * 0.004;
+            rosePoints.push(makeRosePoint(x, y, z, hsl2rgb(hue, 82, light), size, 0.92, 'petal'));
         }
     }
 
+    // 花茎：从花心向下略微弯曲
+    function addStemParticles() {
+        for (var i = 0; i < ROSE_STEM_COUNT; i++) {
+            var t = i / ROSE_STEM_COUNT;
+            var y = -0.06 - t * 1.32;
+            var x = Math.sin(t * 3.2) * 0.06;
+            var z = Math.cos(t * 2.4) * 0.05;
+            var light = 36 + Math.random() * 12;
+            var size = 0.011 + Math.random() * 0.006;
+            rosePoints.push(makeRosePoint(x, y, z, hsl2rgb(122, 55, light), size, 0.9, 'stem'));
+        }
+    }
+
+    // 叶子：贴在花茎两侧
+    function addLeafParticles(side, y0, ang, dir) {
+        var cosA = Math.cos(ang), sinA = Math.sin(ang);
+        for (var i = 0; i < ROSE_LEAF_COUNT; i++) {
+            var s = Math.pow(Math.random(), 0.7);
+            var w = (Math.random() * 2 - 1) * 0.9;
+            var lenS = 0.34 * s;
+            var lx = side * 0.16 + dir * lenS * cosA;
+            var ly = y0 + lenS * 0.45 * s + w * 0.05;
+            var lz = w * 0.13 * Math.sin(s * Math.PI) + dir * lenS * sinA;
+            var light = 42 + Math.random() * 14;
+            var size = 0.010 + Math.random() * 0.006;
+            rosePoints.push(makeRosePoint(lx, ly, lz, hsl2rgb(126, 52, light), size, 0.9, 'leaf'));
+        }
+    }
+
+    // 花心金色光点（花蕊簇）
+    function addBudParticles() {
+        for (var i = 0; i < ROSE_BUD_COUNT; i++) {
+            var th = Math.random() * Math.PI * 2;
+            var ph = Math.acos(Math.random() * 2 - 1);
+            var r = Math.pow(Math.random(), 1.6) * 0.14;
+            var x = Math.cos(th) * Math.sin(ph) * r;
+            var y = 0.30 + Math.cos(ph) * r * 0.7 + Math.random() * 0.08;
+            var z = Math.sin(th) * Math.sin(ph) * r;
+            var light = 72 + Math.random() * 12;
+            var size = 0.010 + Math.random() * 0.007;
+            rosePoints.push(makeRosePoint(x, y, z, hsl2rgb(348, 88, light), size, 1, 'bud'));
+        }
+    }
+
+    // 环绕星尘
+    function addSparkles() {
+        for (var i = 0; i < ROSE_SPARK_COUNT; i++) {
+            var th = Math.random() * Math.PI * 2;
+            var r = 0.85 + Math.random() * 1.25;
+            var y = (Math.random() - 0.35) * 1.6;
+            var x = Math.cos(th) * r;
+            var z = Math.sin(th) * r;
+            var light = 68 + Math.random() * 14;
+            rosePoints.push(makeRosePoint(x, y, z, hsl2rgb(44, 92, light), 0.007 + Math.random() * 0.005, 0.6, 'spark', Math.random() * Math.PI * 2));
+        }
+    }
+
+    function shuffle(arr) {
+        for (var i = arr.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+        }
+    }
+
+    function buildRose() {
+        rosePoints = [];
+        // 花瓣粒子数：按各层面积比例分配，保证整体均匀
+        var totalArea = 0;
+        var areas = [];
+        for (var l = 0; l < ROSE_LAYERS.length; l++) {
+            var a = ROSE_LAYERS[l].len * ROSE_LAYERS[l].width * ROSE_LAYERS[l].petal;
+            areas.push(a); totalArea += a;
+        }
+        var petalBudget = Math.round(ROSE_MAX * 0.8);
+        for (var l = 0; l < ROSE_LAYERS.length; l++) {
+            var L = ROSE_LAYERS[l];
+            var perPetal = Math.max(1, Math.round(petalBudget * areas[l] / totalArea / L.petal));
+            for (var p = 0; p < L.petal; p++) {
+                var ang = (p / L.petal) * Math.PI * 2 + (l % 2) * (Math.PI / L.petal) + l * 0.3;
+                addPetalParticles(L, ang, perPetal, l);
+            }
+        }
+        addStemParticles();
+        addLeafParticles(-1, -0.30, 0.3, 1);    // 左侧叶
+        addLeafParticles(1, -0.55, -0.2, -1);   // 右侧叶
+        addBudParticles();
+        addSparkles();
+        shuffle(rosePoints);
+        roseTargetCount = rosePoints.length;
+        roseStartTime = performance.now();
+        roseBloom = 0;
+    }
+
+    // 玫瑰旋转 / 绽放 / 缩放状态更新
+    function updateRose(dt, time) {
+        if (!roseDragging) {
+            roseRotY += 0.0045 * dt + roseVelY;
+            roseRotX += roseVelX;
+        } else {
+            roseRotY += roseVelY;
+            roseRotX += roseVelX;
+        }
+        roseVelY *= 0.94;
+        roseVelX *= 0.94;
+        // 缩放平滑过渡
+        roseZoom += (roseZoomTarget - roseZoom) * 0.08;
+        // 绽放进度（easeOutCubic，约 2.6s）
+        if (roseBloom < 1 && roseStartTime) {
+            var t = Math.min(1, (time - roseStartTime) / 2600);
+            roseBloom = 1 - Math.pow(1 - t, 3);
+        }
+        // 稀释自适应：FPS 低时减少绘制粒子数
+        var want = Math.round(ROSE_MAX * Math.max(0.3, dilutionFactor));
+        roseTargetCount = Math.max(300, Math.min(rosePoints.length, want));
+    }
+
     function drawRose(time) {
+        if (!rosePoints.length) return;
         var cx = W / 2;
-        var cy = H * 0.4;
-        roseAngle += 0.004;
-        var breathe = 1 + Math.sin(time * 0.001) * 0.03; // 呼吸缩放
+        var cy = H * 0.50 + Math.sin(time * 0.0007) * roseBaseR * 0.04; // 轻微漂浮
+        var persp = 3.4;                       // 透视距离（越小立体感越强）
+        var modelR = roseBaseR * roseZoom;
+        var b = roseBloom;
+        var cosY = Math.cos(roseRotY), sinY = Math.sin(roseRotY);
+        var cosX = Math.cos(roseRotX), sinX = Math.sin(roseRotX);
 
-        for (var i = 0; i < roseParticles.length; i++) {
-            var rp = roseParticles[i];
-            var a = rp.baseT + roseAngle + rp.phase * 0.01;
-            var x = cx + Math.cos(a) * rp.orbitR * breathe;
-            var y = cy + Math.sin(a) * rp.orbitR * breathe + rp.y;
+        var n = Math.min(roseTargetCount, rosePoints.length);
+        var scr = [];
+        for (var i = 0; i < n; i++) {
+            var pt = rosePoints[i];
+            // 绽放插值：闭合花苞 → 盛开
+            var x = pt.cx + (pt.x - pt.cx) * b;
+            var y = pt.cy + (pt.y - pt.cy) * b;
+            var z = pt.cz + (pt.z - pt.cz) * b;
+            // 星尘微动
+            if (pt.type === 'spark') {
+                x += Math.sin(time * 0.0006 + pt.phase) * 0.04;
+                y += Math.cos(time * 0.0005 + pt.phase) * 0.04;
+                z += Math.sin(time * 0.0007 + pt.phase * 2) * 0.04;
+            }
+            // 绕 Y 旋转
+            var x1 = x * cosY + z * sinY;
+            var z1 = -x * sinY + z * cosY;
+            var y1 = y;
+            // 绕 X 旋转
+            var y2 = y1 * cosX - z1 * sinX;
+            var z2 = y1 * sinX + z1 * cosX;
+            // 透视投影
+            var pr = persp / (persp + z2);
+            if (pr <= 0.02) continue;
+            scr.push({
+                sx: cx + x1 * pr * modelR,
+                sy: cy - (y2 - 0.22) * pr * modelR,
+                z: z2, p: pr, pt: pt
+            });
+        }
+        // 深度排序（远处先画，实现遮挡与立体感）
+        scr.sort(function (p1, p2) { return p1.z - p2.z; });
 
-            // 发光花瓣粒子
-            var tw = 0.7 + 0.3 * Math.sin(rp.phase + time * 0.003);
-            ctx.beginPath();
-            ctx.arc(x, y, rp.size * (0.8 + tw * 0.4), 0, Math.PI * 2);
-            ctx.fillStyle = 'hsla(' + rp.hue + ',80%,65%,' + (rp.alpha * tw * 0.85).toFixed(3) + ')';
-            ctx.fill();
+        for (var k = 0; k < scr.length; k++) {
+            var it = scr[k];
+            var pt = it.pt;
+            // 距离亮度：近亮大、远暗小
+            var near = Math.min(1.25, Math.max(0.35, it.p));
+            var size = pt.size * modelR * near;
+            var alpha = pt.a * Math.min(1, 0.35 + 0.65 * (near / 1.25));
+            var tw = 1;
+            if (pt.type === 'bud' || pt.type === 'spark') {
+                tw = 0.72 + 0.28 * Math.sin(time * 0.003 + pt.phase); // 闪烁
+            }
+            ctx.fillStyle = pt.rgb;
             // 光晕
+            ctx.globalAlpha = alpha * 0.14 * tw;
             ctx.beginPath();
-            ctx.arc(x, y, rp.size * 3, 0, Math.PI * 2);
-            ctx.fillStyle = 'hsla(' + rp.hue + ',80%,65%,' + (rp.alpha * tw * 0.12).toFixed(3) + ')';
+            ctx.arc(it.sx, it.sy, size * 4.5, 0, Math.PI * 2);
+            ctx.fill();
+            // 核心
+            ctx.globalAlpha = alpha * tw;
+            ctx.beginPath();
+            ctx.arc(it.sx, it.sy, size * 1.7, 0, Math.PI * 2);
             ctx.fill();
         }
-
-        // 花心亮光
-        ctx.beginPath();
-        ctx.arc(cx, cy, 6 + Math.sin(time * 0.002) * 2, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255, 200, 220, 0.35)';
-        ctx.fill();
+        ctx.globalAlpha = 1;
     }
 
     // ============ 点击互动：爱心花瓣旋涡 ============
@@ -421,6 +632,7 @@
     // ============ 主循环 ============
     function update(dt, time) {
         ensureLoveAppears(time);
+        updateRose(dt, time);
 
         // 花瓣：下落 + 漂浮 + 旋转 + 摆动，到底部重置
         for (var i = 0; i < petals.length; i++) {
@@ -558,7 +770,8 @@
                 sp: Math.random() * 0.02 + 0.005
             });
         }
-        createRose();
+        roseBaseR = Math.min(W, H) * (isMobile ? 0.34 : 0.26);
+        buildRose();
     }
 
     // resize 防抖
@@ -585,11 +798,105 @@
         }
     }
 
+    // ============ 交互：拖拽旋转 3D 花束 / 滚轮·捏合缩放 / 点击撒花瓣 ============
+    var dragState = null;        // { x, y, dist, moved, ptrId, lastX, lastY }
+    var pointerMap = {};         // 多指跟踪（捏合缩放）
+    var pinchDist0 = 0;
+    var pinchZoom0 = 1;
+    var ROSE_DRAG_THRESHOLD = 10;
+
+    function getPinchDist() {
+        var ids = Object.keys(pointerMap);
+        if (ids.length < 2) return 0;
+        var p1 = pointerMap[ids[0]];
+        var p2 = pointerMap[ids[1]];
+        return Math.hypot(p1.x - p2.x, p1.y - p2.y);
+    }
+
+    function pointerDown(e) {
+        pointerMap[e.pointerId] = { x: e.clientX, y: e.clientY };
+        if (dragState) return;
+        dragState = { x: e.clientX, y: e.clientY, dist: 0, moved: false, ptrId: e.pointerId, lastX: e.clientX, lastY: e.clientY };
+        roseDragging = true;
+        roseVelY = 0; roseVelX = 0;
+        canvas.classList.add('dragging');
+        try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ }
+        if (Object.keys(pointerMap).length >= 2) {
+            pinchDist0 = getPinchDist();
+            pinchZoom0 = roseZoomTarget;
+        }
+    }
+
+    function pointerMove(e) {
+        if (pointerMap[e.pointerId]) pointerMap[e.pointerId] = { x: e.clientX, y: e.clientY };
+        if (!dragState || dragState.ptrId !== e.pointerId) return;
+        var dx = e.clientX - dragState.lastX;
+        var dy = e.clientY - dragState.lastY;
+        dragState.lastX = e.clientX;
+        dragState.lastY = e.clientY;
+        dragState.dist += Math.abs(dx) + Math.abs(dy);
+        if (dragState.dist > ROSE_DRAG_THRESHOLD) dragState.moved = true;
+        // 拖拽旋转（带惯性）
+        roseRotY += dx * 0.006;
+        roseRotX += dy * 0.005;
+        roseRotX = Math.max(-0.4, Math.min(1.25, roseRotX));
+        roseVelY = dx * 0.006;
+        roseVelX = dy * 0.005;
+        // 双指捏合缩放
+        var pd = getPinchDist();
+        if (pd > 20 && pinchDist0 > 0) {
+            roseZoomTarget = Math.max(0.55, Math.min(2.4, pinchZoom0 * (pd / pinchDist0)));
+        }
+    }
+
+    function pointerUp(e) {
+        delete pointerMap[e.pointerId];
+        if (!dragState || dragState.ptrId !== e.pointerId) return;
+        var wasMoved = dragState.moved;
+        var sx = dragState.x, sy = dragState.y;
+        dragState = null;
+        roseDragging = Object.keys(pointerMap).length > 0;
+        pinchDist0 = 0;
+        canvas.classList.remove('dragging');
+        // 未拖拽视为点击 → 撒花瓣旋涡
+        if (!wasMoved) {
+            handlePointer(sx, sy);
+        }
+    }
+
+    // 滚轮缩放
+    canvas.addEventListener('wheel', function (e) {
+        e.preventDefault();
+        roseZoomTarget = Math.max(0.55, Math.min(2.4, roseZoomTarget * (1 - e.deltaY * 0.0012)));
+        hideHint();
+    }, { passive: false });
+
+    // 双击重置视图
+    canvas.addEventListener('dblclick', function (e) {
+        roseRotY = 0.6;
+        roseRotX = 0.32;
+        roseVelY = 0; roseVelX = 0;
+        roseZoomTarget = 1;
+    });
+
+    // 交互提示文字：首次交互后淡出
+    var hintEl = document.getElementById('hint');
+    var hintTimer = null;
+    function hideHint() {
+        if (!hintEl || hintEl.classList.contains('fade-out')) return;
+        clearTimeout(hintTimer);
+        hintTimer = setTimeout(function () { hintEl.classList.add('fade-out'); }, 2200);
+    }
+    canvas.addEventListener('pointerdown', hideHint);
+    canvas.addEventListener('dblclick', hideHint);
+
     if (window.PointerEvent) {
-        canvas.addEventListener('pointerup', function (e) {
-            handlePointer(e.clientX, e.clientY);
-        });
+        canvas.addEventListener('pointerdown', pointerDown);
+        window.addEventListener('pointermove', pointerMove);
+        window.addEventListener('pointerup', pointerUp);
+        window.addEventListener('pointercancel', pointerUp);
     } else {
+        // 老浏览器回退：仅点击撒花瓣
         var lastTap = 0;
         canvas.addEventListener('touchend', function (e) {
             var now = Date.now();
@@ -617,7 +924,13 @@
             return {
                 petals: petals.length,
                 fireflies: fireflies.length,
-                roseParticles: roseParticles.length,
+                rosePoints: rosePoints.length,
+                roseTarget: roseTargetCount,
+                roseRotY: roseRotY.toFixed(2),
+                roseRotX: roseRotX.toFixed(2),
+                roseZoom: roseZoom.toFixed(2),
+                roseZoomTarget: roseZoomTarget.toFixed(2),
+                roseBloom: roseBloom.toFixed(2),
                 swirlParticles: particles.length,
                 textBursts: textBursts.length,
                 dilutionFactor: dilutionFactor,

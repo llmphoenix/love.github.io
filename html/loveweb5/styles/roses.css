@@ -41,7 +41,7 @@ body {
     width: 100vw;
     height: 100vh;
     display: block;
-    cursor: pointer;
+    cursor: grab;
 }
 
 /* 返回按钮 */
@@ -151,6 +151,20 @@ body {
     animation: hintPulse 2.5s ease-in-out infinite;
     pointer-events: none;
     white-space: nowrap;
+    transition: opacity 1.2s ease;
+}
+
+.hint-text.fade-out {
+    opacity: 0;
+}
+
+/* 拖拽 3D 花束时的光标反馈 */
+#roses.dragging {
+    cursor: grabbing;
+}
+
+#roses {
+    cursor: grab;
 }
 
 @keyframes hintPulse {
