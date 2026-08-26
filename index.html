@@ -425,22 +425,24 @@
         }
 
         /* ===== 登录验证遮罩 ===== */
+        /* 默认完全隐藏（display:none）：密码有效时刷新/加载页面不会闪现登录窗口；
+           需要验证时由 JS 添加 .visible 淡入显示 */
         #login-overlay {
             position: fixed;
             inset: 0;
             z-index: 9999;
             background: linear-gradient(135deg, #fff0f5 0%, #ffd6e0 50%, #ffc8d8 100%);
-            display: flex;
+            display: none;
             align-items: center;
             justify-content: center;
             padding: 20px;
-            transition: opacity 0.6s ease;
+            opacity: 0;
+            transition: opacity 0.5s ease;
         }
 
-        #login-overlay.hidden {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
+        #login-overlay.visible {
+            display: flex;
+            opacity: 1;
         }
 
         .login-card {
@@ -796,10 +798,27 @@
                 } catch (e) { /* 忽略 */ }
             }
 
-            // 密码仍有效则直接进入首页
-            if (isSessionValid()) {
-                overlay.classList.add('hidden');
-                return;
+            // 密码仍有效则直接进入首页（遮罩默认 display:none，完全不渲染，刷新看不到登录窗口）
+            if (!isSessionValid()) {
+                showOverlay();
+            }
+
+            function showOverlay() {
+                // 首次显示：先 display:flex（opacity 仍为 0），下一帧再加 .visible 触发淡入
+                overlay.classList.remove('visible');
+                overlay.style.display = 'flex';
+                // 强制重排后再加 .visible，确保 opacity 从 0 → 1 有过渡动画
+                void overlay.offsetWidth;
+                overlay.classList.add('visible');
+                input.focus();
+            }
+
+            function hideOverlay() {
+                overlay.classList.remove('visible');
+                // 过渡结束后再真正隐藏（display:none），避免遮罩残留
+                setTimeout(function () {
+                    overlay.style.display = 'none';
+                }, 500);
             }
 
             function tryLogin() {
@@ -809,7 +828,7 @@
                     // 登录成功：记录时间 + 淡出遮罩进入首页
                     markLoggedIn();
                     error.classList.remove('show');
-                    overlay.classList.add('hidden');
+                    hideOverlay();
                 } else {
                     // 暗号或密码错误：提示 + 抖动
                     error.textContent = '暗号或密码不对哦，再想想 ♡';
