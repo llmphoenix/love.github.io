@@ -48,8 +48,8 @@
     // 上一个对白的兜底定时器（切换对白时清除，避免叠加）
     var lastSafetyTimer = null;
 
-    // 对白播放节流：间隔 > 0.6s 才触发（每次点击都播放，仅防极速连点重叠）
-    var MIN_INTERVAL = 600;
+    // 对白播放冷却：间隔 > 1s 才触发（上一个没播放完时点击不会播放新的）
+    var MIN_INTERVAL = 1000;
 
     // ---- Web Audio 相关 ----
     // 共享 AudioContext（优先复用 EnvPlayer 的，避免创建多个 context）
@@ -214,6 +214,9 @@
 
     function handlePointer() {
         var now = Date.now();
+        // 上一个对白还没播放完：点击不播放新的
+        if (activeSources.length > 0) return;
+        // 点击冷却：1s 间隔内不重复触发
         if (now - lastPlayAt < MIN_INTERVAL) return;
         lastPlayAt = now;
 
