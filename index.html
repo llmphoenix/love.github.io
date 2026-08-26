@@ -520,6 +520,10 @@
             user-select: text;
         }
 
+        .login-input + .login-input {
+            margin-top: 12px;
+        }
+
         .login-input:focus {
             border-color: #d6336c;
             box-shadow: 0 0 0 3px rgba(214, 51, 108, 0.15);
@@ -563,13 +567,14 @@
     </style>
 </head>
 <body>
-    <!-- 登录验证遮罩：输入正确暗号后才能进入首页 -->
+    <!-- 登录验证遮罩：输入正确暗号 + 密码后才能进入首页 -->
     <div id="login-overlay">
         <div class="login-card">
             <div class="login-heart">💗</div>
             <h2 class="login-title">甄玥，欢迎回家</h2>
-            <p class="login-sub">请输入我们的暗号进入</p>
-            <input type="password" id="login-input" class="login-input" placeholder="请输入暗号…" autocomplete="off" />
+            <p class="login-sub">请输入我们的暗号与密码进入</p>
+            <input type="text" id="login-input" class="login-input" placeholder="请输入暗号…" autocomplete="off" />
+            <input type="password" id="login-pass" class="login-input" placeholder="请输入密码…" autocomplete="off" />
             <button id="login-btn" class="login-btn">进 入</button>
             <p class="login-error" id="login-error"></p>
         </div>
@@ -741,30 +746,76 @@
         MusicPlayer.init({ audioDir: 'audio', buttonId: 'musicBtn' });
 
         // ===== 登录验证：输入正确暗号才能进入首页 =====
+        // 1 小时内且未跨天，密码仍有效（免重复输入）；超过 1 小时或跨天则需重新验证
         (function () {
             var overlay = document.getElementById('login-overlay');
             var input = document.getElementById('login-input');
+            var pass = document.getElementById('login-pass');
             var btn = document.getElementById('login-btn');
             var error = document.getElementById('login-error');
-            var PASSWORD = '甄玥爱刘李明';
+            var STORAGE_KEY = 'love-login-time';
+            var HOUR_MS = 60 * 60 * 1000;
+            var FIXED_PASSWORD = '20260205'; // 固定密码
+            // 兼容清理旧版会话标记
+            sessionStorage.removeItem('love-logged-in');
 
-            // 本会话已登录过则直接进入（刷新不重复验证）
-            if (sessionStorage.getItem('love-logged-in') === '1') {
+            // 暗号按当天日期奇偶切换：
+            //   奇数日 → "甄玥"
+            //   偶数日 → "甄玥爱刘李明"
+            function todayPassword() {
+                var day = new Date().getDate();
+                return (day % 2 === 1) ? '甄玥' : '甄玥爱刘李明';
+            }
+
+            // 当天日期字符串（用于判断是否跨天）
+            function todayStr() {
+                var d = new Date();
+                return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+            }
+
+            // 密码是否仍有效：1 小时内且未跨天
+            function isSessionValid() {
+                try {
+                    var saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+                    if (!saved || !saved.time || !saved.date) return false;
+                    if (saved.date !== todayStr()) return false;   // 跨天 → 失效
+                    if (Date.now() - saved.time >= HOUR_MS) return false; // 超 1 小时 → 失效
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            // 登录成功后记录时间（localStorage，刷新/重开页面仍保留）
+            function markLoggedIn() {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                        time: Date.now(),
+                        date: todayStr()
+                    }));
+                } catch (e) { /* 忽略 */ }
+            }
+
+            // 密码仍有效则直接进入首页
+            if (isSessionValid()) {
                 overlay.classList.add('hidden');
                 return;
             }
 
             function tryLogin() {
-                if (input.value.trim() === PASSWORD) {
-                    // 登录成功：记录会话，淡出遮罩进入首页
-                    sessionStorage.setItem('love-logged-in', '1');
+                var passOk = pass.value.trim() === FIXED_PASSWORD;
+                var codeOk = input.value.trim() === todayPassword();
+                if (codeOk && passOk) {
+                    // 登录成功：记录时间 + 淡出遮罩进入首页
+                    markLoggedIn();
                     error.classList.remove('show');
                     overlay.classList.add('hidden');
                 } else {
-                    // 暗号错误：提示 + 抖动
-                    error.textContent = '暗号不对哦，再想想 ♡';
+                    // 暗号或密码错误：提示 + 抖动
+                    error.textContent = '暗号或密码不对哦，再想想 ♡';
                     error.classList.add('show');
                     input.value = '';
+                    pass.value = '';
                     input.focus();
                     var card = overlay.querySelector('.login-card');
                     card.classList.remove('shake');
@@ -774,8 +825,14 @@
             }
 
             btn.addEventListener('click', tryLogin);
-            input.addEventListener('keydown', function (e) {
+            pass.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter') tryLogin();
+            });
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    pass.focus();
+                }
             });
             input.focus();
         })();
