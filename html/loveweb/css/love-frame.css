@@ -13,6 +13,10 @@
     overflow: hidden;
     pointer-events: none;      /* 不阻挡页面点击/滚动 */
     z-index: 0;                /* 垫底：内容 .content(z-index:1) 在上 */
+
+    /* 心形基准尺寸：取视口较窄边的 60%，保证任意屏幕下心形都是
+       固定 1:1 比例并居中，不再被视口宽高比拉变形 / 溢出裁切 */
+    --heart-size: min(60vw, 60vh);
 }
 
 .love span {
@@ -61,35 +65,38 @@
 /* 左右来回摆动 → 横向展开成心宽
    注意：x-move 必须用 left（布局属性）而非 transform，
    因为 span 同时运行 y-move（transform: translateY 画心形曲线），
-   两个动画若都用 transform 会互相覆盖，横向摆动会失效。 */
+   两个动画若都用 transform 会互相覆盖，横向摆动会失效。
+   心宽同样基于 --heart-size 并水平居中：左 = 50vw - H/2，右 = 50vw + H/2 */
 @keyframes x-move {
-    to { left: 100vw; }
+    from { left: calc(50vw - var(--heart-size) * 0.5); }
+    to   { left: calc(50vw + var(--heart-size) * 0.5); }
 }
 
-/* 沿心形高度曲线运动（相对视口高度缩放：0 = 顶部，100vh = 底部心尖） */
+/* 沿心形高度曲线运动（相对 --heart-size 缩放并垂直居中：
+   顶 = 50vh - H/2，心尖 = 50vh + H/2，心高固定 = H，不再随视口高度拉伸） */
 /* opacity 波形：淡(0.35) → 左上峰顶变实(1) → 保持 → 心尖恢复淡，
    相位差使"高亮词"沿轮廓接力移动，每帧恰有一个明显的"爱" */
 @keyframes y-move {
-    0%    { transform: translateY(40vh);  opacity: 0.35; }
-    10%   { transform: translateY(10vh);  opacity: 0.35; }
-    14%   { transform: translateY(1.6vh); opacity: 0.35; }
-    15%   { transform: translateY(1.1vh); opacity: 1; }     /* 左上峰顶 → 变实 */
-    18%   { transform: translateY(0);     opacity: 1; }
-    20%   { transform: translateY(1.1vh); opacity: 1; }
-    22%   { transform: translateY(7.8vh); opacity: 1; }
-    24%   { transform: translateY(14.4vh); opacity: 1; }
-    25%   { transform: translateY(24.4vh); opacity: 1; }
-    26%   { transform: translateY(14.4vh); opacity: 1; }
-    28%   { transform: translateY(7.8vh); opacity: 1; }
-    30%   { transform: translateY(1.1vh); opacity: 1; }
-    32%   { transform: translateY(0);     opacity: 1; }
-    35%   { transform: translateY(1.1vh); opacity: 0.35; }  /* 峰顶后回落变淡 */
-    40%   { transform: translateY(10vh);  opacity: 0.35; }
-    50%   { transform: translateY(40vh);  opacity: 0.35; }
-    71%   { transform: translateY(95.6vh); opacity: 0.35; }
-    72.5% { transform: translateY(97.8vh); opacity: 0.35; }
-    75%   { transform: translateY(100vh); opacity: 0.35; }
-    77.5% { transform: translateY(97.8vh); opacity: 0.35; }
-    79%   { transform: translateY(95.6vh); opacity: 0.35; }
-    100%  { transform: translateY(40vh);  opacity: 0.35; }
+    0%    { transform: translateY(calc(50vh - var(--heart-size) * 0.1));   opacity: 0.35; }
+    10%   { transform: translateY(calc(50vh - var(--heart-size) * 0.4));   opacity: 0.35; }
+    14%   { transform: translateY(calc(50vh - var(--heart-size) * 0.484)); opacity: 0.35; }
+    15%   { transform: translateY(calc(50vh - var(--heart-size) * 0.489)); opacity: 1; }   /* 左上峰顶 → 变实 */
+    18%   { transform: translateY(calc(50vh - var(--heart-size) * 0.5));   opacity: 1; }
+    20%   { transform: translateY(calc(50vh - var(--heart-size) * 0.489)); opacity: 1; }
+    22%   { transform: translateY(calc(50vh - var(--heart-size) * 0.422)); opacity: 1; }
+    24%   { transform: translateY(calc(50vh - var(--heart-size) * 0.356)); opacity: 1; }
+    25%   { transform: translateY(calc(50vh - var(--heart-size) * 0.256)); opacity: 1; }
+    26%   { transform: translateY(calc(50vh - var(--heart-size) * 0.356)); opacity: 1; }
+    28%   { transform: translateY(calc(50vh - var(--heart-size) * 0.422)); opacity: 1; }
+    30%   { transform: translateY(calc(50vh - var(--heart-size) * 0.489)); opacity: 1; }
+    32%   { transform: translateY(calc(50vh - var(--heart-size) * 0.5));   opacity: 1; }
+    35%   { transform: translateY(calc(50vh - var(--heart-size) * 0.489)); opacity: 0.35; }  /* 峰顶后回落变淡 */
+    40%   { transform: translateY(calc(50vh - var(--heart-size) * 0.4));   opacity: 0.35; }
+    50%   { transform: translateY(calc(50vh - var(--heart-size) * 0.1));   opacity: 0.35; }
+    71%   { transform: translateY(calc(50vh + var(--heart-size) * 0.456)); opacity: 0.35; }
+    72.5% { transform: translateY(calc(50vh + var(--heart-size) * 0.478)); opacity: 0.35; }
+    75%   { transform: translateY(calc(50vh + var(--heart-size) * 0.5));   opacity: 0.35; }
+    77.5% { transform: translateY(calc(50vh + var(--heart-size) * 0.478)); opacity: 0.35; }
+    79%   { transform: translateY(calc(50vh + var(--heart-size) * 0.456)); opacity: 0.35; }
+    100%  { transform: translateY(calc(50vh - var(--heart-size) * 0.1));   opacity: 0.35; }
 }
