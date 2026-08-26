@@ -423,9 +423,158 @@
                 font-size: 0.75rem;
             }
         }
+
+        /* ===== 登录验证遮罩 ===== */
+        #login-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: linear-gradient(135deg, #fff0f5 0%, #ffd6e0 50%, #ffc8d8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            transition: opacity 0.6s ease;
+        }
+
+        #login-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 24px;
+            padding: 40px 30px;
+            text-align: center;
+            max-width: 340px;
+            width: 100%;
+            box-shadow: 0 8px 32px rgba(214, 51, 108, 0.15);
+            animation: loginPop 0.5s ease-out;
+        }
+
+        .login-card.shake {
+            animation: loginShake 0.4s ease;
+        }
+
+        @keyframes loginPop {
+            from { transform: scale(0.8) translateY(20px); opacity: 0; }
+            to { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        @keyframes loginShake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-10px); }
+            40% { transform: translateX(10px); }
+            60% { transform: translateX(-6px); }
+            80% { transform: translateX(6px); }
+        }
+
+        .login-heart {
+            font-size: 2.6rem;
+            margin-bottom: 12px;
+            animation: loginBeat 1.2s ease-in-out infinite;
+        }
+
+        @keyframes loginBeat {
+            0%, 100% { transform: scale(1); }
+            15% { transform: scale(1.15); }
+            30% { transform: scale(1); }
+            45% { transform: scale(1.1); }
+            60% { transform: scale(1); }
+        }
+
+        .login-title {
+            font-size: 1.3rem;
+            color: #d6336c;
+            letter-spacing: 3px;
+            margin-bottom: 8px;
+            font-weight: 300;
+        }
+
+        .login-sub {
+            font-size: 0.85rem;
+            color: #a61e4d;
+            opacity: 0.7;
+            margin-bottom: 22px;
+            letter-spacing: 1px;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(214, 51, 108, 0.3);
+            border-radius: 50px;
+            font-size: 1rem;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.7);
+            color: #d6336c;
+            outline: none;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        .login-input:focus {
+            border-color: #d6336c;
+            box-shadow: 0 0 0 3px rgba(214, 51, 108, 0.15);
+        }
+
+        .login-btn {
+            width: 100%;
+            margin-top: 16px;
+            padding: 12px;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(135deg, #ff6b9d, #d6336c);
+            color: #fff;
+            font-size: 1rem;
+            letter-spacing: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(214, 51, 108, 0.3);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .login-error {
+            margin-top: 12px;
+            font-size: 0.8rem;
+            color: #e03131;
+            min-height: 1.2em;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .login-error.show {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
+    <!-- 登录验证遮罩：输入正确暗号后才能进入首页 -->
+    <div id="login-overlay">
+        <div class="login-card">
+            <div class="login-heart">💗</div>
+            <h2 class="login-title">甄玥，欢迎回家</h2>
+            <p class="login-sub">请输入我们的暗号进入</p>
+            <input type="password" id="login-input" class="login-input" placeholder="请输入暗号…" autocomplete="off" />
+            <button id="login-btn" class="login-btn">进 入</button>
+            <p class="login-error" id="login-error"></p>
+        </div>
+    </div>
+
     <div id="hearts-bg"></div>
 
     <div class="music-control" id="musicBtn">
@@ -590,6 +739,46 @@
 
         // 背景音乐（随机播放，逻辑统一在 js/music-player.js）
         MusicPlayer.init({ audioDir: 'audio', buttonId: 'musicBtn' });
+
+        // ===== 登录验证：输入正确暗号才能进入首页 =====
+        (function () {
+            var overlay = document.getElementById('login-overlay');
+            var input = document.getElementById('login-input');
+            var btn = document.getElementById('login-btn');
+            var error = document.getElementById('login-error');
+            var PASSWORD = '甄玥爱刘李明';
+
+            // 本会话已登录过则直接进入（刷新不重复验证）
+            if (sessionStorage.getItem('love-logged-in') === '1') {
+                overlay.classList.add('hidden');
+                return;
+            }
+
+            function tryLogin() {
+                if (input.value.trim() === PASSWORD) {
+                    // 登录成功：记录会话，淡出遮罩进入首页
+                    sessionStorage.setItem('love-logged-in', '1');
+                    error.classList.remove('show');
+                    overlay.classList.add('hidden');
+                } else {
+                    // 暗号错误：提示 + 抖动
+                    error.textContent = '暗号不对哦，再想想 ♡';
+                    error.classList.add('show');
+                    input.value = '';
+                    input.focus();
+                    var card = overlay.querySelector('.login-card');
+                    card.classList.remove('shake');
+                    void card.offsetWidth; /* 触发重排以重放抖动动画 */
+                    card.classList.add('shake');
+                }
+            }
+
+            btn.addEventListener('click', tryLogin);
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') tryLogin();
+            });
+            input.focus();
+        })();
     </script>
 </body>
 </html>
